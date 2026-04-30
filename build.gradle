@@ -2,10 +2,18 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.14'
 	id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com.bolicos'
 version = '0.0.1-SNAPSHOT'
+description = 'API Challenge'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
 
 java {
 	toolchain {
@@ -22,24 +30,66 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+
 	implementation 'org.flywaydb:flyway-core'
 	implementation 'org.flywaydb:flyway-database-oracle'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.16'
+
 	implementation 'org.springframework.kafka:spring-kafka'
-	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	runtimeOnly 'com.h2database:h2'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.16'
+
 	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
-	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
-	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+//	Testes
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/Application.class',
+                    '**/config/**',
+                    '**/dto/**',
+            ])
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.20
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn jacocoTestCoverageVerification
+}
+
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
