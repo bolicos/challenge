@@ -26,6 +26,9 @@ jobs:
           java-version: "21"
           distribution: temurin
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - name: Build (compile)
         run: ./gradlew --no-daemon assemble
 
@@ -54,6 +57,9 @@ jobs:
         with:
           java-version: "21"
           distribution: temurin
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Generate Coverage Report
         run: ./gradlew --no-daemon jacocoTestReport
