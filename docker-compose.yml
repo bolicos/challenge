@@ -2,28 +2,22 @@ version: '3.8'
 
 services:
 
-  oracle:
-    image: gvenzl/oracle-free:slim-faststart
+  postgres:
+    image: postgres:15-alpine
     container_name: challenge-db
     ports:
-      - "1521:1521"
+      - "5432:5432"
     environment:
-      APP_USER: challenge
-      APP_USER_PASSWORD: challenge
-      ORACLE_PASSWORD: admin
-      ORACLE_MEMORY: 1024
+      POSTGRES_DB: challenge
+      POSTGRES_USER: challenge
+      POSTGRES_PASSWORD: challenge
     volumes:
-      - oracle_data:/opt/oracle/oradata
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "healthcheck.sh"]
+      test: [ "CMD-SHELL", "pg_isready -U challenge -d challenge" ]
       interval: 10s
       timeout: 5s
-      retries: 20
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
+      retries: 10
 
   kafka:
     image: redpandadata/redpanda:latest
@@ -76,14 +70,14 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      oracle:
+      postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: local
 
-      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle:1521/FREEPDB1
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/challenge
       SPRING_DATASOURCE_USERNAME: challenge
       SPRING_DATASOURCE_PASSWORD: challenge
 
@@ -97,4 +91,4 @@ services:
           memory: 512M
 
 volumes:
-  oracle_data:
+  postgres_data:
