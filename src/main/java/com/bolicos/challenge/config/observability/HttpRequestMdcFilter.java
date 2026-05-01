@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
-
 public class HttpRequestMdcFilter extends OncePerRequestFilter {
 
     public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
