@@ -2,7 +2,7 @@ CREATE TABLE communication_preferences
 (
     id                    UUID,
     version               BIGINT DEFAULT 0,
-    created_at           TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    created_at            TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     last_modified_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     created_by            VARCHAR(100) NOT NULL,
     last_modified_by      VARCHAR(100) NOT NULL,

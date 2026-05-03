@@ -1,8 +1,10 @@
 package com.bolicos.challenge.domain.model;
 
 import com.bolicos.challenge.domain.exception.DuplicateEmailException;
+import com.bolicos.challenge.domain.exception.DomainException;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,6 +50,25 @@ class CommunicationPreferenceTest {
     }
 
     @Test
+    void deveLancarExcecaoQuandoEmailForNuloNoAdd() {
+        var pref = new CommunicationPreference();
+
+        assertThrows(DomainException.class, () -> pref.addEmail(null));
+    }
+
+    @Test
+    void deveLancarExcecaoQuandoEnderecoForNuloNoAdd() {
+        var pref = new CommunicationPreference();
+
+        var email = new PreferenceEmail();
+        email.setEmail(null);
+        email.setType(EmailType.PESSOAL);
+        email.setVerified(false);
+
+        assertThrows(DomainException.class, () -> pref.addEmail(email));
+    }
+
+    @Test
     void deveSubstituirEmailsNoReplace() {
         var pref = new CommunicationPreference();
 
@@ -88,6 +109,13 @@ class CommunicationPreferenceTest {
         e2.setVerified(true);
 
         assertThrows(DuplicateEmailException.class, () -> pref.replaceEmails(List.of(e1, e2)));
+    }
+
+    @Test
+    void deveLancarExcecaoQuandoEmailForNuloNoReplace() {
+        var pref = new CommunicationPreference();
+
+        assertThrows(DomainException.class, () -> pref.replaceEmails(Collections.singletonList(null)));
     }
 
     @Test

@@ -11,6 +11,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +21,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.Hibernate;
+
+import java.util.Locale;
 
 @Getter
 @Setter
@@ -53,6 +57,13 @@ public class PreferenceEmailEntity extends AuditableEntity {
     @JoinColumn(name = "preference_id", nullable = false)
     private CommunicationPreferenceEntity preference;
 
+    @PreUpdate
+    @PrePersist
+    void normalizeEmail() {
+        if (email != null) {
+            email = email.trim().toLowerCase(Locale.ROOT);
+        }
+    }
 
     @Override
     public final boolean equals(Object o) {

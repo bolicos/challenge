@@ -71,7 +71,7 @@ class CommunicationPreferenceEntityDataJpaTest {
         p2.setCommunicationChannel(CommunicationChannel.WHATSAPP);
 
         var e2 = new PreferenceEmailEntity();
-        e2.setEmail("global@x.com"); // duplicado global
+        e2.setEmail("GLOBAL@x.com"); // duplicado global, mesmo variando caixa
         e2.setType(EmailType.COMERCIAL);
         e2.setVerified(true);
         e2.setPreference(p2);

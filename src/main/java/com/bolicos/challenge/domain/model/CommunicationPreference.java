@@ -1,6 +1,7 @@
 package com.bolicos.challenge.domain.model;
 
 import com.bolicos.challenge.domain.exception.DuplicateEmailException;
+import com.bolicos.challenge.domain.exception.DomainException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import lombok.ToString;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,8 +33,11 @@ public class CommunicationPreference {
     private final List<PreferenceEmail> emails = new ArrayList<>();
 
     public void addEmail(PreferenceEmail email) {
-        // exemplo de regra: não duplicar por endereço
-        boolean exists = emails.stream().anyMatch(e -> e.getEmail().equalsIgnoreCase(email.getEmail()));
+        String normalizedEmail = normalizeEmail(email);
+        boolean exists = emails.stream()
+            .map(this::normalizeEmail)
+            .anyMatch(normalizedEmail::equals);
+
         if (exists) throw new DuplicateEmailException("email already exists");
         this.emails.add(email);
     }
@@ -42,16 +47,23 @@ public class CommunicationPreference {
             this.emails.clear();
             return;
         }
-        // validar duplicatas dentro de newEmails
         Set<String> lower = new HashSet<>();
 
         for (PreferenceEmail pe : newEmails) {
-            String norm = pe.getEmail().toLowerCase();
+            String norm = normalizeEmail(pe);
             if (!lower.add(norm)) throw new DuplicateEmailException("duplicate email in list");
         }
 
         this.emails.clear();
         this.emails.addAll(newEmails);
+    }
+
+    private String normalizeEmail(PreferenceEmail email) {
+        if (email == null || email.getEmail() == null || email.getEmail().isBlank()) {
+            throw new DomainException("email is required");
+        }
+
+        return email.getEmail().trim().toLowerCase(Locale.ROOT);
     }
 
     @Override
@@ -67,6 +79,6 @@ public class CommunicationPreference {
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return id != null ? id.hashCode() : System.identityHashCode(this);
     }
 }

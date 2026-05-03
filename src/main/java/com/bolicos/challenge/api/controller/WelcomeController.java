@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 public class WelcomeController {
 
-    @GetMapping(value = "/")
+    @GetMapping
     public WelcomeResponse welcome() {
         return new WelcomeResponse("ok", "API Challenge is running");
     }

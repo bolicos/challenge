@@ -5,8 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,6 +36,6 @@ public class PreferenceEmail {
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return id != null ? id.hashCode() : System.identityHashCode(this);
     }
 }

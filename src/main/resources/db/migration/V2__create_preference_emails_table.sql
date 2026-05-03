@@ -2,7 +2,7 @@ CREATE TABLE emails
 (
     id               BIGINT GENERATED ALWAYS AS IDENTITY,
     version          BIGINT DEFAULT 0,
-    created_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    created_at       TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     last_modified_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     created_by       VARCHAR(100) NOT NULL,
     last_modified_by VARCHAR(100) NOT NULL,
@@ -20,5 +20,4 @@ CREATE TABLE emails
         REFERENCES communication_preferences (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_emails_by_email ON emails (email);
 CREATE INDEX idx_emails_by_preference_id ON emails (preference_id);
