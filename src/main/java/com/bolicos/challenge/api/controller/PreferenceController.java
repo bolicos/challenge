@@ -5,15 +5,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
+import java.util.Set;
+
 @RestController
-@RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
-public class WelcomeController {
+@RequestMapping(path = "/api/preferences", produces = MediaType.APPLICATION_JSON_VALUE)
+public class PreferenceController {
 
     @GetMapping
-    public WelcomeResponse welcome() {
-        return new WelcomeResponse("ok", "API Challenge is running");
-    }
-
-    public record WelcomeResponse(String status, String message) {
+    public Set<String> all() {
+        return Collections.emptySet();
     }
 }
