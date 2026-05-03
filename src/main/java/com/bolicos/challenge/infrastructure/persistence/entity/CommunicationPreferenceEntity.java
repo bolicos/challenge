@@ -28,7 +28,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(onlyExplicitlyIncluded = true)
+@ToString(callSuper = true, onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "communication_preferences")
 public class CommunicationPreferenceEntity extends AuditableEntity {
@@ -47,7 +47,6 @@ public class CommunicationPreferenceEntity extends AuditableEntity {
     @Column(name = "communication_channel", nullable = false, length = 20)
     private CommunicationChannel communicationChannel;
 
-    @ToString.Exclude
     @Builder.Default
     @OneToMany(
         mappedBy = "preference",

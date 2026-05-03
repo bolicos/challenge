@@ -31,6 +31,18 @@ class CommunicationPreferenceTest {
     }
 
     @Test
+    void naoDevePermitirAlteracaoDiretaDaListaDeEmails() {
+        var pref = new CommunicationPreference();
+
+        var email = new PreferenceEmail();
+        email.setEmail("a@b.com");
+        email.setType(EmailType.PESSOAL);
+        email.setVerified(false);
+
+        assertThrows(UnsupportedOperationException.class, () -> pref.getEmails().add(email));
+    }
+
+    @Test
     void deveLancarExcecaoQuandoEmailDuplicadoNoAdd() {
         var pref = new CommunicationPreference();
 

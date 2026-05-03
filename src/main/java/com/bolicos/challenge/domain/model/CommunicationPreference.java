@@ -4,10 +4,12 @@ import com.bolicos.challenge.domain.exception.DuplicateEmailException;
 import com.bolicos.challenge.domain.exception.DomainException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -29,8 +31,12 @@ public class CommunicationPreference {
     @ToString.Include
     private CommunicationChannel communicationChannel;
 
-    @ToString.Exclude
+    @Getter(AccessLevel.NONE)
     private final List<PreferenceEmail> emails = new ArrayList<>();
+
+    public List<PreferenceEmail> getEmails() {
+        return Collections.unmodifiableList(emails);
+    }
 
     public void addEmail(PreferenceEmail email) {
         String normalizedEmail = normalizeEmail(email);

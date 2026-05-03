@@ -29,7 +29,7 @@ import java.util.Locale;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(onlyExplicitlyIncluded = true)
+@ToString(callSuper = true, onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "emails")
 public class PreferenceEmailEntity extends AuditableEntity {
@@ -52,7 +52,6 @@ public class PreferenceEmailEntity extends AuditableEntity {
     @Column(name = "verified", nullable = false)
     private Boolean verified;
 
-    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "preference_id", nullable = false)
     private CommunicationPreferenceEntity preference;
