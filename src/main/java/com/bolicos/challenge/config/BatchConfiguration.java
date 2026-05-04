@@ -1,6 +1,6 @@
 package com.bolicos.challenge.config;
 
-import com.bolicos.challenge.application.port.in.PreferenceUseCase;
+import com.bolicos.challenge.application.port.in.PreferenceBatchUseCase;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
 import com.bolicos.challenge.domain.model.EmailType;
@@ -90,8 +90,8 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public ItemWriter<CommunicationPreference> preferenceCsvWriter(PreferenceUseCase preferenceUseCase) {
-        return chunk -> preferenceUseCase.importBatch(new ArrayList<>(chunk.getItems()));
+    public ItemWriter<CommunicationPreference> preferenceCsvWriter(PreferenceBatchUseCase preferenceBatchUseCase) {
+        return chunk -> preferenceBatchUseCase.importBatch(new ArrayList<>(chunk.getItems()));
     }
 
     private DefaultLineMapper<PreferenceCsvRecord> preferenceCsvLineMapper() {

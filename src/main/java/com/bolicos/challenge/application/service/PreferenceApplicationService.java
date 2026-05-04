@@ -2,7 +2,6 @@ package com.bolicos.challenge.application.service;
 
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryView;
-import com.bolicos.challenge.application.model.PreferenceBatchImportResult;
 import com.bolicos.challenge.application.event.PreferenceChangedEvent;
 import com.bolicos.challenge.application.event.PreferenceEventType;
 import com.bolicos.challenge.application.port.out.PreferenceEventPublisher;
@@ -53,25 +52,6 @@ public class PreferenceApplicationService implements PreferenceUseCase {
     @Transactional(readOnly = true)
     public List<CommunicationPreferenceSummaryView> findSummary() {
         return persistencePort.findSummary();
-    }
-
-    @Override
-    @Transactional
-    public PreferenceBatchImportResult importBatch(List<CommunicationPreference> preferences) {
-        List<CommunicationPreference> safePreferences = preferences == null ? List.of() : preferences;
-        safePreferences.forEach(this::ensureCustomerId);
-
-        List<CommunicationPreferenceView> imported = persistencePort.saveAll(safePreferences);
-        imported.stream()
-            .map(preference -> PreferenceChangedEvent.of(PreferenceEventType.PREFERENCE_CREATED, preference))
-            .forEach(this::publishAfterCommit);
-
-        return new PreferenceBatchImportResult(
-            safePreferences.size(),
-            imported.size(),
-            safePreferences.size() - imported.size(),
-            imported
-        );
     }
 
     @Override

@@ -10,7 +10,6 @@ import com.bolicos.challenge.application.port.out.PreferencePersistencePort;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,81 +18,34 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-class PreferenceApplicationServiceTest {
+class PreferenceBatchApplicationServiceTest {
 
     private final FakePreferencePersistencePort persistencePort = new FakePreferencePersistencePort();
     private final FakePreferenceEventPublisher eventPublisher = new FakePreferenceEventPublisher();
-    private final PreferenceApplicationService service = new PreferenceApplicationService(
+    private final PreferenceBatchApplicationService service = new PreferenceBatchApplicationService(
         persistencePort,
         eventPublisher
     );
 
     @Test
-    void devePublicarEventoQuandoCriarPreferencia() {
-        var preference = preference(null);
+    void deveImportarPreferenciasEmLote() {
+        var result = service.importBatch(List.of(preference(null), preference(null)));
 
-        var created = service.create(preference);
-
-        assertNotNull(created.id());
+        assertEquals(2, result.totalRecebido());
+        assertEquals(2, result.totalProcessado());
+        assertEquals(0, result.totalComErro());
+        assertEquals(2, eventPublisher.count());
         assertEquals(PreferenceEventType.PREFERENCE_CREATED, eventPublisher.lastEvent().eventType());
-        assertEquals(created.id(), eventPublisher.lastEvent().preference().id());
     }
 
     @Test
-    void devePublicarEventoQuandoAtualizarPreferencia() {
-        UUID id = UUID.randomUUID();
-        persistencePort.nextView = view(id);
+    void deveTratarListaNulaComoImportacaoVazia() {
+        var result = service.importBatch(null);
 
-        var updated = service.update(id, preference(id));
-
-        assertEquals(id, updated.id());
-        assertEquals(PreferenceEventType.PREFERENCE_UPDATED, eventPublisher.lastEvent().eventType());
-    }
-
-    @Test
-    void devePublicarEventoQuandoDeletarPreferencia() {
-        UUID id = UUID.randomUUID();
-        persistencePort.nextView = view(id);
-
-        service.delete(id);
-
-        assertEquals(PreferenceEventType.PREFERENCE_DELETED, eventPublisher.lastEvent().eventType());
-        assertEquals(id, eventPublisher.lastEvent().preference().id());
-    }
-
-    @Test
-    void devePublicarEventoSomenteDepoisDoCommit() {
-        TransactionSynchronizationManager.initSynchronization();
-
-        try {
-            service.create(preference(null));
-
-            assertEquals(0, eventPublisher.count());
-
-            TransactionSynchronizationManager.getSynchronizations()
-                .forEach(synchronization -> synchronization.afterCommit());
-
-            assertEquals(1, eventPublisher.count());
-            assertEquals(PreferenceEventType.PREFERENCE_CREATED, eventPublisher.lastEvent().eventType());
-        } finally {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
-    }
-
-    @Test
-    void naoDevePublicarEventoQuandoTransacaoNaoComitar() {
-        TransactionSynchronizationManager.initSynchronization();
-
-        try {
-            service.create(preference(null));
-
-            assertEquals(0, eventPublisher.count());
-        } finally {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
-
+        assertEquals(0, result.totalRecebido());
+        assertEquals(0, result.totalProcessado());
+        assertEquals(0, result.totalComErro());
         assertEquals(0, eventPublisher.count());
     }
 
@@ -117,12 +69,9 @@ class PreferenceApplicationServiceTest {
 
     private class FakePreferencePersistencePort implements PreferencePersistencePort {
 
-        private CommunicationPreferenceView nextView;
-
         @Override
         public CommunicationPreferenceView save(CommunicationPreference preference) {
-            nextView = view(preference.getId() != null ? preference.getId() : UUID.randomUUID());
-            return nextView;
+            return view(preference.getId() != null ? preference.getId() : UUID.randomUUID());
         }
 
         @Override
@@ -134,11 +83,7 @@ class PreferenceApplicationServiceTest {
 
         @Override
         public Optional<CommunicationPreferenceView> findById(UUID id) {
-            if (nextView == null || !nextView.id().equals(id)) {
-                return Optional.empty();
-            }
-
-            return Optional.of(nextView);
+            return Optional.empty();
         }
 
         @Override
@@ -153,7 +98,7 @@ class PreferenceApplicationServiceTest {
 
         @Override
         public boolean existsById(UUID id) {
-            return nextView != null && nextView.id().equals(id);
+            return false;
         }
 
         @Override
