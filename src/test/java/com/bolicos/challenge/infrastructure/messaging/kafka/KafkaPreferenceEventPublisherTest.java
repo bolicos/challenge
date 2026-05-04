@@ -56,9 +56,10 @@ class KafkaPreferenceEventPublisherTest {
 
         ProducerRecord<?, ?> record = captor.getValue();
         assertEquals("communication-preference-events", record.topic());
-        assertEquals(event.preference().id().toString(), record.key());
+        assertEquals(event.preference().customerId().toString(), record.key());
         assertNotNull(record.headers().lastHeader(KafkaPreferenceEventPublisher.EVENT_ID_HEADER));
         assertNotNull(record.headers().lastHeader(KafkaPreferenceEventPublisher.EVENT_TYPE_HEADER));
+        assertNotNull(record.headers().lastHeader(KafkaPreferenceEventPublisher.CUSTOMER_ID_HEADER));
         assertNotNull(record.headers().lastHeader(HttpRequestMdcFilter.CORRELATION_ID_HEADER));
     }
 

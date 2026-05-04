@@ -133,6 +133,22 @@ Ou apenas pelo Docker (Gerando a imagem e subindo o container do challenge):
 docker compose up -d --build
 ```
 
+No Docker Compose, a API usa o profile `prd`:
+
+```yaml
+SPRING_PROFILES_ACTIVE: prd
+```
+
+Esse profile le as configuracoes por variaveis de ambiente, como em um ambiente produtivo:
+
+```properties
+spring.datasource.url=${DB_URL}
+spring.kafka.bootstrap-servers=${KAFKA_BOOTSTRAP_SERVERS}
+challenge.kafka.topics.preference-events=${PREFERENCE_EVENTS_TOPIC}
+```
+
+O proprio `docker-compose.yml` define essas variaveis para a integracao local com PostgreSQL e Redpanda.
+
 Por padrao, a imagem da API e criada como:
 
 ```text
@@ -314,6 +330,7 @@ Headers enviados:
 ```text
 eventId
 eventType
+customerId
 X-Correlation-Id
 ```
 
@@ -326,6 +343,14 @@ O payload inclui:
 - dados de auditoria
 
 As datas sao serializadas como string ISO-8601.
+
+No Docker Compose, o topico `communication-preference-events` e criado pelo servico `kafka-topic-setup` com 3 partitions e fator de replica 1:
+
+```bash
+rpk -X brokers=kafka:9092 topic create communication-preference-events --partitions 3 --replicas 1 --if-not-exists
+```
+
+A key da mensagem Kafka e o `customerId`. Assim, eventos do mesmo cliente tendem a cair na mesma partition e mantem ordenacao relativa por cliente. Clientes diferentes podem ser distribuidos entre partitions diferentes, o que fica visivel no Kafka UI.
 
 Em ambiente local, existe um consumer demonstrativo para o mesmo topico, habilitado por:
 
@@ -346,6 +371,12 @@ Configuracoes aplicadas no Kafka producer:
 - `request.timeout.ms=30000`
 - `delivery.timeout.ms=120000`
 - `max.in.flight.requests.per.connection=5`
+
+Configuracao local do topico no Docker Compose:
+
+- `partitions=3`
+- `replication-factor=1`
+- message key: `customerId`
 
 Configuracoes aplicadas no consumer demonstrativo:
 
@@ -389,6 +420,7 @@ HTTP request -> service -> database -> Kafka event
 - Web como infraestrutura: controllers, DTOs e mappers HTTP ficam em `infrastructure.web`, porque REST e apenas um adapter de entrada para o caso de uso.
 - Mappers manuais: foram mantidos para simplicidade e controle explicito. MapStruct pode ser introduzido depois, principalmente para DTOs e views. A reconciliacao da colecao JPA de e-mails deve continuar como regra customizada para preservar IDs e auditoria.
 - Eventos Kafka apos commit: os eventos sao registrados para publicacao apos a transacao confirmar. Isso evita publicar evento de uma alteracao que sofreu rollback.
+- Particionamento Kafka: no Docker Compose, o topico de eventos e criado com 3 partitions. A key da mensagem e o `customerId`, favorecendo ordenacao por cliente e permitindo visualizar a distribuicao no Kafka UI.
 - Sem transactional outbox: o projeto loga falhas de envio Kafka, mas nao persiste eventos pendentes. Em um sistema produtivo com maior criticidade, o proximo passo seria implementar o padrao Outbox.
 - Consumer Kafka demonstrativo: existe um consumer local para logar eventos do proprio topico e facilitar validacao manual. Ele fica desabilitado por padrao e habilitado no profile `local`.
 - Observabilidade: `X-Correlation-Id` e gerado ou reaproveitado em cada request, propagado para Kafka e registrado nos logs. Isso ajuda a rastrear o fluxo completo em ferramentas como OpenSearch, Loki, Datadog ou similares.
@@ -396,6 +428,7 @@ HTTP request -> service -> database -> Kafka event
 - CORS: `WebConfiguration` centraliza a configuracao de CORS para `/api/**`, expondo `X-Correlation-Id` e `Location` para clientes HTTP.
 - `customerId` foi adicionado ao payload como extensao do challenge, porque a preferencia pertence a um cliente. Ele permanece opcional para preservar compatibilidade com o exemplo original; quando ausente, a application layer gera um UUID.
 - Docker image tag: o Compose usa `challenge-api:${APP_VERSION:-local}` para evitar imagens sem tag (`<none>`) e permitir versoes explicitas em build local ou CI.
+- Profile Docker `prd`: o container da API usa `application-prd.properties`, que le configuracoes por variaveis de ambiente. Isso aproxima o teste local de um deploy real, mantendo `application-local.properties` para execucao direta na maquina.
 - Flyway local: o profile `local` tambem usa Flyway e `ddl-auto=validate`. Isso evita divergencia entre ambiente local e runtime em container, mantendo o schema sob controle das migrations.
 - PostgreSQL vs Oracle: Oracle Free foi considerado, mas a imagem Docker e mais pesada para um challenge. PostgreSQL foi escolhido por ser leve, simples de subir localmente e oferecer recursos SQL avancados. Para cenarios Oracle, as migrations poderiam ser adaptadas para sequences, packages, procedures e PL/SQL. No PostgreSQL, o equivalente procedural seria PL/pgSQL.
 - View SQL: a migration `V3__create_communication_preference_summary_view.sql` cria a view `vw_communication_preference_summary`, usada pelo endpoint `/api/preferencias/resumo`. Isso demonstra uma abordagem de read model baseada em banco, comum em sistemas com consultas consolidadas.

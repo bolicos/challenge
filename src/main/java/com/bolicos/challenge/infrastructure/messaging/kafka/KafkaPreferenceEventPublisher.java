@@ -22,6 +22,7 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
 
     public static final String EVENT_ID_HEADER = "eventId";
     public static final String EVENT_TYPE_HEADER = "eventType";
+    public static final String CUSTOMER_ID_HEADER = "customerId";
 
     private final KafkaTemplate<String, PreferenceChangedEventPayload> kafkaTemplate;
     private final MeterRegistry meterRegistry;
@@ -32,6 +33,7 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
     @Override
     public void publish(PreferenceChangedEvent event) {
         String preferenceId = event.preference().id().toString();
+        String customerId = event.preference().customerId().toString();
         String correlationId = MDC.get(HttpRequestMdcFilter.CORRELATION_ID_MDC_KEY);
         incrementMetric("challenge.kafka.preference.events.publish.attempt", event.eventType().name());
         var payload = new PreferenceChangedEventPayload(
@@ -43,19 +45,21 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
 
         ProducerRecord<String, PreferenceChangedEventPayload> record = new ProducerRecord<>(
             preferenceEventsTopic,
-            preferenceId,
+            customerId,
             payload
         );
 
         addHeader(record, EVENT_ID_HEADER, event.eventId().toString());
         addHeader(record, EVENT_TYPE_HEADER, event.eventType().name());
+        addHeader(record, CUSTOMER_ID_HEADER, customerId);
         addHeader(record, HttpRequestMdcFilter.CORRELATION_ID_HEADER, correlationId);
 
         log.info(
-            "Publishing preference event: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}",
+            "Publishing preference event: eventId={}, eventType={}, preferenceId={}, customerId={}, topic={}, correlationId={}",
             event.eventId(),
             event.eventType(),
             preferenceId,
+            customerId,
             preferenceEventsTopic,
             correlationId
         );
@@ -65,10 +69,11 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
                 if (exception != null) {
                     incrementMetric("challenge.kafka.preference.events.publish.failure", event.eventType().name());
                     log.error(
-                        "Failed to publish preference event: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}",
+                        "Failed to publish preference event: eventId={}, eventType={}, preferenceId={}, customerId={}, topic={}, correlationId={}",
                         event.eventId(),
                         event.eventType(),
                         preferenceId,
+                        customerId,
                         preferenceEventsTopic,
                         correlationId,
                         exception
@@ -78,10 +83,11 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
 
                 incrementMetric("challenge.kafka.preference.events.publish.success", event.eventType().name());
                 log.info(
-                    "Published preference event: eventId={}, eventType={}, preferenceId={}, topic={}, partition={}, offset={}, correlationId={}",
+                    "Published preference event: eventId={}, eventType={}, preferenceId={}, customerId={}, topic={}, partition={}, offset={}, correlationId={}",
                     event.eventId(),
                     event.eventType(),
                     preferenceId,
+                    customerId,
                     result.getRecordMetadata().topic(),
                     result.getRecordMetadata().partition(),
                     result.getRecordMetadata().offset(),
@@ -91,10 +97,11 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
         } catch (Exception ex) {
             incrementMetric("challenge.kafka.preference.events.publish.failure", event.eventType().name());
             log.error(
-                "Failed to schedule preference event publish: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}, exceptionClass={}",
+                "Failed to schedule preference event publish: eventId={}, eventType={}, preferenceId={}, customerId={}, topic={}, correlationId={}, exceptionClass={}",
                 event.eventId(),
                 event.eventType(),
                 preferenceId,
+                customerId,
                 preferenceEventsTopic,
                 correlationId,
                 ex.getClass().getName(),
