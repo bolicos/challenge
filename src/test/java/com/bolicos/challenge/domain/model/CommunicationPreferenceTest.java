@@ -160,6 +160,33 @@ class CommunicationPreferenceTest {
     }
 
     @Test
+    void equalsDeveSerTrueParaMesmaInstancia() {
+        var preference = new CommunicationPreference();
+
+        assertEquals(preference, preference);
+    }
+
+    @Test
+    void equalsDeveSerFalseQuandoCompararComNuloOuOutraClasse() {
+        var preference = new CommunicationPreference();
+        preference.setId(UUID.randomUUID());
+
+        assertNotEquals(null, preference);
+        assertNotEquals("preference", preference);
+    }
+
+    @Test
+    void equalsDeveSerFalseQuandoIdsForemDiferentes() {
+        var a = new CommunicationPreference();
+        a.setId(UUID.randomUUID());
+
+        var b = new CommunicationPreference();
+        b.setId(UUID.randomUUID());
+
+        assertNotEquals(a, b);
+    }
+
+    @Test
     void equalsDeveSerFalseQuandoIdNulo() {
         var a = new CommunicationPreference();
         var b = new CommunicationPreference();
