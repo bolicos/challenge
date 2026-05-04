@@ -2,8 +2,10 @@ package com.bolicos.challenge.infrastructure.web.mapper;
 
 import com.bolicos.challenge.infrastructure.web.dto.CommunicationPreferenceRequest;
 import com.bolicos.challenge.infrastructure.web.dto.CommunicationPreferenceResponse;
+import com.bolicos.challenge.infrastructure.web.dto.CommunicationPreferenceSummaryResponse;
 import com.bolicos.challenge.infrastructure.web.dto.PreferenceEmailRequest;
 import com.bolicos.challenge.infrastructure.web.dto.PreferenceEmailResponse;
+import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryView;
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.application.model.PreferenceEmailView;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
@@ -37,6 +39,31 @@ public class PreferenceWebMapper {
 
     public List<CommunicationPreferenceResponse> toResponses(List<CommunicationPreferenceView> views) {
         return views.stream().map(this::toResponse).toList();
+    }
+
+    public List<CommunicationPreference> toDomains(List<CommunicationPreferenceRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+
+        return requests.stream().map(this::toDomain).toList();
+    }
+
+    public CommunicationPreferenceSummaryResponse toSummaryResponse(CommunicationPreferenceSummaryView view) {
+        return new CommunicationPreferenceSummaryResponse(
+            view.id(),
+            view.customerId(),
+            view.communicationChannel(),
+            view.emailCount(),
+            view.dataCriacao(),
+            view.dataAtualizacao()
+        );
+    }
+
+    public List<CommunicationPreferenceSummaryResponse> toSummaryResponses(
+        List<CommunicationPreferenceSummaryView> views
+    ) {
+        return views.stream().map(this::toSummaryResponse).toList();
     }
 
     private List<PreferenceEmail> toDomainEmails(List<PreferenceEmailRequest> emails) {

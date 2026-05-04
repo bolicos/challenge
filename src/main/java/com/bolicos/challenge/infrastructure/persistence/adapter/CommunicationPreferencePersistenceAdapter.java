@@ -1,6 +1,7 @@
 package com.bolicos.challenge.infrastructure.persistence.adapter;
 
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
+import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryView;
 import com.bolicos.challenge.application.port.out.PreferencePersistencePort;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
 import com.bolicos.challenge.infrastructure.persistence.entity.CommunicationPreferenceEntity;
@@ -29,6 +30,17 @@ public class CommunicationPreferencePersistenceAdapter implements PreferencePers
     }
 
     @Override
+    public List<CommunicationPreferenceView> saveAll(List<CommunicationPreference> preferences) {
+        List<CommunicationPreferenceEntity> entities = preferences.stream()
+            .map(mapper::toNewEntity)
+            .toList();
+
+        return repository.saveAll(entities).stream()
+            .map(mapper::toView)
+            .toList();
+    }
+
+    @Override
     public Optional<CommunicationPreferenceView> findById(UUID id) {
         return repository.findWithEmailsById(id).map(mapper::toView);
     }
@@ -36,6 +48,13 @@ public class CommunicationPreferencePersistenceAdapter implements PreferencePers
     @Override
     public List<CommunicationPreferenceView> findAll() {
         return repository.findAllWithEmails().stream().map(mapper::toView).toList();
+    }
+
+    @Override
+    public List<CommunicationPreferenceSummaryView> findSummary() {
+        return repository.findAllSummary().stream()
+            .map(mapper::toSummaryView)
+            .toList();
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.bolicos.challenge.application.port.out;
 
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
+import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryView;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
 
 import java.util.List;
@@ -11,9 +12,13 @@ public interface PreferencePersistencePort {
 
     CommunicationPreferenceView save(CommunicationPreference preference);
 
+    List<CommunicationPreferenceView> saveAll(List<CommunicationPreference> preferences);
+
     Optional<CommunicationPreferenceView> findById(UUID id);
 
     List<CommunicationPreferenceView> findAll();
+
+    List<CommunicationPreferenceSummaryView> findSummary();
 
     boolean existsById(UUID id);
 

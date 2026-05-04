@@ -1,13 +1,16 @@
 package com.bolicos.challenge.infrastructure.persistence.mapper;
 
 import com.bolicos.challenge.application.model.AuditMetadata;
+import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryView;
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.application.model.PreferenceEmailView;
+import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
 import com.bolicos.challenge.domain.model.PreferenceEmail;
 import com.bolicos.challenge.infrastructure.persistence.entity.AuditableEntity;
 import com.bolicos.challenge.infrastructure.persistence.entity.CommunicationPreferenceEntity;
 import com.bolicos.challenge.infrastructure.persistence.entity.PreferenceEmailEntity;
+import com.bolicos.challenge.infrastructure.persistence.projection.CommunicationPreferenceSummaryProjection;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -41,6 +44,17 @@ public class CommunicationPreferenceEntityMapper {
             entity.getCommunicationChannel(),
             toEmailViews(entity.getEmails()),
             auditOf(entity)
+        );
+    }
+
+    public CommunicationPreferenceSummaryView toSummaryView(CommunicationPreferenceSummaryProjection projection) {
+        return new CommunicationPreferenceSummaryView(
+            projection.getId(),
+            projection.getCustomerId(),
+            CommunicationChannel.valueOf(projection.getCommunicationChannel()),
+            projection.getEmailCount(),
+            projection.getDataCriacao(),
+            projection.getDataAtualizacao()
         );
     }
 
