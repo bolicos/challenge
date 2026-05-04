@@ -1,6 +1,7 @@
 package com.bolicos.challenge.infrastructure.messaging.kafka;
 
-import com.bolicos.challenge.config.observability.HttpRequestMdcFilter;
+import com.bolicos.challenge.shared.constants.KafkaKeys;
+import com.bolicos.challenge.shared.constants.MdcKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
@@ -15,21 +16,15 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class KafkaPreferenceEventLoggerConsumer {
 
-    private static final String EVENT_ID_MDC_KEY = "eventId";
-    private static final String EVENT_TYPE_MDC_KEY = "eventType";
-    private static final String TOPIC_MDC_KEY = "topic";
-    private static final String PARTITION_MDC_KEY = "partition";
-    private static final String OFFSET_MDC_KEY = "offset";
-
     @KafkaListener(
-        topics = "${challenge.kafka.topics.preference-events}",
-        groupId = "${challenge.kafka.consumers.preference-event-logger.group-id:challenge-preference-event-logger}",
-        autoStartup = "${challenge.kafka.consumers.preference-event-logger.enabled:false}"
+        topics = KafkaKeys.PREFERENCE_EVENTS_TOPIC_PROPERTY,
+        groupId = KafkaKeys.PREFERENCE_EVENT_LOGGER_GROUP_ID_PROPERTY,
+        autoStartup = KafkaKeys.PREFERENCE_EVENT_LOGGER_ENABLED_PROPERTY
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        String eventId = headerValue(record, KafkaPreferenceEventPublisher.EVENT_ID_HEADER);
-        String eventType = headerValue(record, KafkaPreferenceEventPublisher.EVENT_TYPE_HEADER);
-        String correlationId = headerValue(record, HttpRequestMdcFilter.CORRELATION_ID_HEADER);
+        String eventId = headerValue(record, KafkaKeys.EVENT_ID_HEADER);
+        String eventType = headerValue(record, KafkaKeys.EVENT_TYPE_HEADER);
+        String correlationId = headerValue(record, KafkaKeys.CORRELATION_ID_HEADER);
 
         try {
             fillMdc(record, eventId, eventType, correlationId);
@@ -69,13 +64,13 @@ public class KafkaPreferenceEventLoggerConsumer {
         String eventType,
         String correlationId
     ) {
-        putIfPresent(HttpRequestMdcFilter.CORRELATION_ID_MDC_KEY, correlationId);
-        putIfPresent(EVENT_ID_MDC_KEY, eventId);
-        putIfPresent(EVENT_TYPE_MDC_KEY, eventType);
-        MDC.put(HttpRequestMdcFilter.SOURCE_MDC_KEY, "kafka");
-        MDC.put(TOPIC_MDC_KEY, record.topic());
-        MDC.put(PARTITION_MDC_KEY, String.valueOf(record.partition()));
-        MDC.put(OFFSET_MDC_KEY, String.valueOf(record.offset()));
+        putIfPresent(MdcKeys.CORRELATION_ID, correlationId);
+        putIfPresent(MdcKeys.EVENT_ID, eventId);
+        putIfPresent(MdcKeys.EVENT_TYPE, eventType);
+        MDC.put(MdcKeys.SOURCE, MdcKeys.KAFKA_SOURCE);
+        MDC.put(MdcKeys.TOPIC, record.topic());
+        MDC.put(MdcKeys.PARTITION, String.valueOf(record.partition()));
+        MDC.put(MdcKeys.OFFSET, String.valueOf(record.offset()));
     }
 
     private void putIfPresent(String key, String value) {

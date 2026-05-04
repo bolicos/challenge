@@ -7,6 +7,7 @@ import com.bolicos.challenge.application.model.PreferenceEmailView;
 import com.bolicos.challenge.application.port.in.PreferenceUseCase;
 import com.bolicos.challenge.domain.exception.PreferenceNotFoundException;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
+import com.bolicos.challenge.domain.model.CommunicationPreference;
 import com.bolicos.challenge.domain.model.EmailType;
 import com.bolicos.challenge.infrastructure.web.exception.GlobalExceptionHandler;
 import com.bolicos.challenge.infrastructure.web.mapper.PreferenceWebMapper;
@@ -62,7 +63,7 @@ class PreferenceControllerTest {
             .andExpect(jsonPath("$.emails[0].email").value("cliente@example.com"))
             .andExpect(jsonPath("$.emails[0].tipo").value("PESSOAL"));
 
-        var captor = ArgumentCaptor.forClass(com.bolicos.challenge.domain.model.CommunicationPreference.class);
+        var captor = ArgumentCaptor.forClass(CommunicationPreference.class);
         verify(preferenceUseCase).create(captor.capture());
         assertEquals(customerId, captor.getValue().getCustomerId());
         assertEquals(CommunicationChannel.EMAIL, captor.getValue().getCommunicationChannel());

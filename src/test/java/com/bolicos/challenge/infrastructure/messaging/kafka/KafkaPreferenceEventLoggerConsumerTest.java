@@ -1,6 +1,7 @@
 package com.bolicos.challenge.infrastructure.messaging.kafka;
 
-import com.bolicos.challenge.config.observability.HttpRequestMdcFilter;
+import com.bolicos.challenge.shared.constants.KafkaKeys;
+import com.bolicos.challenge.shared.constants.MdcKeys;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
@@ -21,14 +22,14 @@ class KafkaPreferenceEventLoggerConsumerTest {
     void deveConsumirEventoComHeaders() {
         var record = new ConsumerRecord<>("communication-preference-events", 0, 1L, "key", "{\"eventId\":\"1\"}");
         var acknowledgment = mock(Acknowledgment.class);
-        record.headers().add(KafkaPreferenceEventPublisher.EVENT_ID_HEADER, "event-1".getBytes(StandardCharsets.UTF_8));
-        record.headers().add(KafkaPreferenceEventPublisher.EVENT_TYPE_HEADER, "PREFERENCE_CREATED".getBytes(StandardCharsets.UTF_8));
-        record.headers().add(HttpRequestMdcFilter.CORRELATION_ID_HEADER, "corr-1".getBytes(StandardCharsets.UTF_8));
+        record.headers().add(KafkaKeys.EVENT_ID_HEADER, "event-1".getBytes(StandardCharsets.UTF_8));
+        record.headers().add(KafkaKeys.EVENT_TYPE_HEADER, "PREFERENCE_CREATED".getBytes(StandardCharsets.UTF_8));
+        record.headers().add(KafkaKeys.CORRELATION_ID_HEADER, "corr-1".getBytes(StandardCharsets.UTF_8));
 
         consumer.consume(record, acknowledgment);
 
         verify(acknowledgment).acknowledge();
-        org.junit.jupiter.api.Assertions.assertNull(MDC.get(HttpRequestMdcFilter.CORRELATION_ID_MDC_KEY));
+        org.junit.jupiter.api.Assertions.assertNull(MDC.get(MdcKeys.CORRELATION_ID));
     }
 
     @Test
@@ -50,6 +51,6 @@ class KafkaPreferenceEventLoggerConsumerTest {
         assertThrows(IllegalStateException.class, () -> consumer.consume(record, acknowledgment));
 
         verify(acknowledgment).acknowledge();
-        org.junit.jupiter.api.Assertions.assertNull(MDC.get(HttpRequestMdcFilter.SOURCE_MDC_KEY));
+        org.junit.jupiter.api.Assertions.assertNull(MDC.get(MdcKeys.SOURCE));
     }
 }

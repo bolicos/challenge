@@ -1,5 +1,7 @@
 package com.bolicos.challenge.config.observability;
 
+import com.bolicos.challenge.shared.constants.KafkaKeys;
+import com.bolicos.challenge.shared.constants.MdcKeys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,13 +15,6 @@ import java.util.UUID;
 
 public class HttpRequestMdcFilter extends OncePerRequestFilter {
 
-    public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
-
-    public static final String CORRELATION_ID_MDC_KEY = "correlationId";
-    public static final String PATH_MDC_KEY = "path";
-    public static final String METHOD_MDC_KEY = "method";
-    public static final String SOURCE_MDC_KEY = "source";
-
     @Override
     protected void doFilterInternal(
         HttpServletRequest request,
@@ -28,16 +23,16 @@ public class HttpRequestMdcFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String correlationId = Optional
-            .ofNullable(request.getHeader(CORRELATION_ID_HEADER))
+            .ofNullable(request.getHeader(KafkaKeys.CORRELATION_ID_HEADER))
             .filter(value -> !value.isBlank())
             .orElse(UUID.randomUUID().toString());
 
-        MDC.put(CORRELATION_ID_MDC_KEY, correlationId);
-        MDC.put(PATH_MDC_KEY, request.getRequestURI());
-        MDC.put(METHOD_MDC_KEY, request.getMethod());
-        MDC.put(SOURCE_MDC_KEY, "web");
+        MDC.put(MdcKeys.CORRELATION_ID, correlationId);
+        MDC.put(MdcKeys.PATH, request.getRequestURI());
+        MDC.put(MdcKeys.METHOD, request.getMethod());
+        MDC.put(MdcKeys.SOURCE, MdcKeys.WEB_SOURCE);
 
-        response.setHeader(CORRELATION_ID_HEADER, correlationId);
+        response.setHeader(KafkaKeys.CORRELATION_ID_HEADER, correlationId);
 
         try {
             filterChain.doFilter(request, response);

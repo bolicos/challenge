@@ -6,6 +6,7 @@ import com.bolicos.challenge.application.model.PreferenceBatchImportResult;
 import com.bolicos.challenge.application.model.PreferenceEmailView;
 import com.bolicos.challenge.application.port.in.PreferenceBatchUseCase;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
+import com.bolicos.challenge.domain.model.CommunicationPreference;
 import com.bolicos.challenge.domain.model.EmailType;
 import com.bolicos.challenge.infrastructure.batch.PreferenceCsvImportJobLauncher;
 import com.bolicos.challenge.infrastructure.web.exception.GlobalExceptionHandler;
@@ -88,7 +89,7 @@ class PreferenceBatchControllerTest {
         var captor = ArgumentCaptor.forClass(List.class);
         verify(preferenceBatchUseCase).importBatch(captor.capture());
         var preferences = captor.getValue();
-        var preference = (com.bolicos.challenge.domain.model.CommunicationPreference) preferences.getFirst();
+        var preference = (CommunicationPreference) preferences.getFirst();
         assertEquals(customerId, preference.getCustomerId());
     }
 

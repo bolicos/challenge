@@ -2,6 +2,7 @@ package com.bolicos.challenge.infrastructure.batch;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.batch.core.BatchStatus;
+import com.bolicos.challenge.shared.constants.MetricsKeys;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -46,8 +47,8 @@ class PreferenceCsvImportJobLauncherTest {
 
         assertEquals(execution, launcher.launch(file));
         assertEquals("preferenceCsvImportJob", launcher.jobName());
-        assertEquals(1.0, metricCount(meterRegistry, PreferenceCsvImportJobLauncher.BATCH_IMPORT_ATTEMPT_METRIC));
-        assertEquals(1.0, metricCount(meterRegistry, PreferenceCsvImportJobLauncher.BATCH_IMPORT_SUCCESS_METRIC));
+        assertEquals(1.0, metricCount(meterRegistry, MetricsKeys.BATCH_PREFERENCE_CSV_IMPORT_ATTEMPT));
+        assertEquals(1.0, metricCount(meterRegistry, MetricsKeys.BATCH_PREFERENCE_CSV_IMPORT_SUCCESS));
     }
 
     @Test
@@ -59,11 +60,11 @@ class PreferenceCsvImportJobLauncherTest {
         when(jobLauncher.run(any(Job.class), any(JobParameters.class))).thenThrow(new IllegalStateException("boom"));
 
         assertThrows(IllegalStateException.class, () -> launcher.launch(file));
-        assertEquals(1.0, metricCount(meterRegistry, PreferenceCsvImportJobLauncher.BATCH_IMPORT_ATTEMPT_METRIC));
-        assertEquals(1.0, metricCount(meterRegistry, PreferenceCsvImportJobLauncher.BATCH_IMPORT_FAILURE_METRIC));
+        assertEquals(1.0, metricCount(meterRegistry, MetricsKeys.BATCH_PREFERENCE_CSV_IMPORT_ATTEMPT));
+        assertEquals(1.0, metricCount(meterRegistry, MetricsKeys.BATCH_PREFERENCE_CSV_IMPORT_FAILURE));
     }
 
     private double metricCount(SimpleMeterRegistry meterRegistry, String metricName) {
-        return meterRegistry.counter(metricName, "job.name", "preferenceCsvImportJob").count();
+        return meterRegistry.counter(metricName, MetricsKeys.JOB_NAME_TAG, "preferenceCsvImportJob").count();
     }
 }

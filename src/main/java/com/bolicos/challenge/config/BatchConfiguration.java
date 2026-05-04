@@ -6,6 +6,7 @@ import com.bolicos.challenge.domain.model.CommunicationPreference;
 import com.bolicos.challenge.domain.model.EmailType;
 import com.bolicos.challenge.domain.model.PreferenceEmail;
 import com.bolicos.challenge.infrastructure.batch.dto.PreferenceCsvRecord;
+import com.bolicos.challenge.shared.constants.BatchKeys;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -31,15 +32,12 @@ import java.util.UUID;
 @Configuration
 public class BatchConfiguration {
 
-    public static final String PREFERENCE_CSV_IMPORT_JOB = "preferenceCsvImportJob";
-    public static final String PREFERENCE_CSV_IMPORT_STEP = "preferenceCsvImportStep";
-
     @Bean
     public Job preferenceCsvImportJob(
         JobRepository jobRepository,
         Step preferenceCsvImportStep
     ) {
-        return new JobBuilder(PREFERENCE_CSV_IMPORT_JOB, jobRepository)
+        return new JobBuilder(BatchKeys.PREFERENCE_CSV_IMPORT_JOB, jobRepository)
             .start(preferenceCsvImportStep)
             .build();
     }
@@ -52,7 +50,7 @@ public class BatchConfiguration {
         ItemProcessor<PreferenceCsvRecord, CommunicationPreference> preferenceCsvProcessor,
         ItemWriter<CommunicationPreference> preferenceCsvWriter
     ) {
-        return new StepBuilder(PREFERENCE_CSV_IMPORT_STEP, jobRepository)
+        return new StepBuilder(BatchKeys.PREFERENCE_CSV_IMPORT_STEP, jobRepository)
             .<PreferenceCsvRecord, CommunicationPreference>chunk(100, transactionManager)
             .reader(preferenceCsvReader)
             .processor(preferenceCsvProcessor)
