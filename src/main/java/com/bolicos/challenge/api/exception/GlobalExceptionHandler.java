@@ -97,7 +97,14 @@ public class GlobalExceptionHandler {
         var uri = request.getRequestURI();
         var details = List.of(ex.getMessage());
 
-        log.error("{}: method={}, path={}", message, request.getMethod(), uri, ex);
+        log.error(
+            "{}: method={}, path={}, exceptionClass={}",
+            message,
+            request.getMethod(),
+            uri,
+            ex.getClass().getName(),
+            ex
+        );
 
         return ApiError.of(INTERNAL_SERVER_ERROR_CODE, INTERNAL_SERVER_ERROR, message, uri, details);
     }

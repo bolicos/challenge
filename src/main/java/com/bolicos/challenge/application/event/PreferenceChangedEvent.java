@@ -1,6 +1,7 @@
 package com.bolicos.challenge.application.event;
 
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
 public record PreferenceChangedEvent(
     UUID eventId,
     PreferenceEventType eventType,
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     OffsetDateTime occurredAt,
     CommunicationPreferenceView preference
 ) {

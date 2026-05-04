@@ -9,6 +9,7 @@ import com.bolicos.challenge.application.port.out.PreferencePersistencePort;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -61,6 +62,40 @@ class PreferenceApplicationServiceTest {
         assertEquals(id, eventPublisher.lastEvent().preference().id());
     }
 
+    @Test
+    void devePublicarEventoSomenteDepoisDoCommit() {
+        TransactionSynchronizationManager.initSynchronization();
+
+        try {
+            service.create(preference(null));
+
+            assertEquals(0, eventPublisher.count());
+
+            TransactionSynchronizationManager.getSynchronizations()
+                .forEach(synchronization -> synchronization.afterCommit());
+
+            assertEquals(1, eventPublisher.count());
+            assertEquals(PreferenceEventType.PREFERENCE_CREATED, eventPublisher.lastEvent().eventType());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void naoDevePublicarEventoQuandoTransacaoNaoComitar() {
+        TransactionSynchronizationManager.initSynchronization();
+
+        try {
+            service.create(preference(null));
+
+            assertEquals(0, eventPublisher.count());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        assertEquals(0, eventPublisher.count());
+    }
+
     private CommunicationPreference preference(UUID id) {
         var preference = new CommunicationPreference();
         preference.setId(id);
@@ -91,7 +126,11 @@ class PreferenceApplicationServiceTest {
 
         @Override
         public Optional<CommunicationPreferenceView> findById(UUID id) {
-            return Optional.ofNullable(nextView);
+            if (nextView == null || !nextView.id().equals(id)) {
+                return Optional.empty();
+            }
+
+            return Optional.of(nextView);
         }
 
         @Override
@@ -120,6 +159,10 @@ class PreferenceApplicationServiceTest {
 
         private PreferenceChangedEvent lastEvent() {
             return events.getLast();
+        }
+
+        private int count() {
+            return events.size();
         }
     }
 }

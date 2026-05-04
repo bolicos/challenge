@@ -25,17 +25,17 @@ public class CommunicationPreferencePersistenceAdapter implements PreferencePers
         CommunicationPreferenceEntity entity = resolveEntity(preference);
         mapper.applyDomain(entity, preference);
 
-        return mapper.toView(repository.saveAndFlush(entity));
+        return mapper.toView(repository.save(entity));
     }
 
     @Override
     public Optional<CommunicationPreferenceView> findById(UUID id) {
-        return repository.findById(id).map(mapper::toView);
+        return repository.findWithEmailsById(id).map(mapper::toView);
     }
 
     @Override
     public List<CommunicationPreferenceView> findAll() {
-        return repository.findAll().stream().map(mapper::toView).toList();
+        return repository.findAllWithEmails().stream().map(mapper::toView).toList();
     }
 
     @Override
@@ -53,7 +53,7 @@ public class CommunicationPreferencePersistenceAdapter implements PreferencePers
             return mapper.toNewEntity(preference);
         }
 
-        return repository.findById(preference.getId())
+        return repository.findWithEmailsById(preference.getId())
             .orElseGet(() -> mapper.toNewEntity(preference));
     }
 }

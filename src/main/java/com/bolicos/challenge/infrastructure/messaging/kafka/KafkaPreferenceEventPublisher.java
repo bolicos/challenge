@@ -7,7 +7,6 @@ import com.bolicos.challenge.infrastructure.messaging.dto.PreferenceChangedEvent
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.internals.RecordHeader;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -58,31 +57,44 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
             correlationId
         );
 
-        kafkaTemplate.send(record).whenComplete((result, exception) -> {
-            if (exception != null) {
-                log.error(
-                    "Failed to publish preference event: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}",
+        try {
+            kafkaTemplate.send(record).whenComplete((result, exception) -> {
+                if (exception != null) {
+                    log.error(
+                        "Failed to publish preference event: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}",
+                        event.eventId(),
+                        event.eventType(),
+                        preferenceId,
+                        preferenceEventsTopic,
+                        correlationId,
+                        exception
+                    );
+                    return;
+                }
+
+                log.info(
+                    "Published preference event: eventId={}, eventType={}, preferenceId={}, topic={}, partition={}, offset={}, correlationId={}",
                     event.eventId(),
                     event.eventType(),
                     preferenceId,
-                    preferenceEventsTopic,
-                    correlationId,
-                    exception
+                    result.getRecordMetadata().topic(),
+                    result.getRecordMetadata().partition(),
+                    result.getRecordMetadata().offset(),
+                    correlationId
                 );
-                return;
-            }
-
-            log.info(
-                "Published preference event: eventId={}, eventType={}, preferenceId={}, topic={}, partition={}, offset={}, correlationId={}",
+            });
+        } catch (Exception ex) {
+            log.error(
+                "Failed to schedule preference event publish: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}, exceptionClass={}",
                 event.eventId(),
                 event.eventType(),
                 preferenceId,
-                result.getRecordMetadata().topic(),
-                result.getRecordMetadata().partition(),
-                result.getRecordMetadata().offset(),
-                correlationId
+                preferenceEventsTopic,
+                correlationId,
+                ex.getClass().getName(),
+                ex
             );
-        });
+        }
     }
 
     private void addHeader(
@@ -94,6 +106,6 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
             return;
         }
 
-        record.headers().add(new RecordHeader(name, value.getBytes(StandardCharsets.UTF_8)));
+        record.headers().add(name, value.getBytes(StandardCharsets.UTF_8));
     }
 }

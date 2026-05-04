@@ -10,8 +10,13 @@ import com.bolicos.challenge.infrastructure.persistence.entity.CommunicationPref
 import com.bolicos.challenge.infrastructure.persistence.entity.PreferenceEmailEntity;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class CommunicationPreferenceEntityMapper {
@@ -40,21 +45,49 @@ public class CommunicationPreferenceEntityMapper {
     }
 
     private void replaceEmails(CommunicationPreferenceEntity preference, List<PreferenceEmail> emails) {
-        preference.getEmails().clear();
+        Set<PreferenceEmailEntity> retained = Collections.newSetFromMap(new IdentityHashMap<>());
 
-        if (emails == null || emails.isEmpty()) {
-            return;
-        }
+        List<PreferenceEmail> incomingEmails = emails == null ? List.of() : emails;
+        for (PreferenceEmail email : incomingEmails) {
+            PreferenceEmailEntity emailEntity = findMatchingEmail(preference.getEmails(), email)
+                .orElseGet(() -> {
+                    var newEmail = new PreferenceEmailEntity();
+                    newEmail.setPreference(preference);
+                    preference.getEmails().add(newEmail);
+                    return newEmail;
+                });
 
-        for (PreferenceEmail email : emails) {
-            var emailEntity = new PreferenceEmailEntity();
             emailEntity.setEmail(email.getEmail());
             emailEntity.setType(email.getType());
             emailEntity.setVerified(email.getVerified());
-            emailEntity.setPreference(preference);
-
-            preference.getEmails().add(emailEntity);
+            retained.add(emailEntity);
         }
+
+        preference.getEmails().removeIf(existing -> !retained.contains(existing));
+    }
+
+    private Optional<PreferenceEmailEntity> findMatchingEmail(
+        List<PreferenceEmailEntity> existingEmails,
+        PreferenceEmail email
+    ) {
+        if (email.getId() != null) {
+            Optional<PreferenceEmailEntity> byId = existingEmails.stream()
+                .filter(existing -> email.getId().equals(existing.getId()))
+                .findFirst();
+
+            if (byId.isPresent()) {
+                return byId;
+            }
+        }
+
+        String emailKey = normalizeEmail(email.getEmail());
+        return existingEmails.stream()
+            .filter(existing -> emailKey.equals(normalizeEmail(existing.getEmail())))
+            .findFirst();
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private List<PreferenceEmailView> toEmailViews(List<PreferenceEmailEntity> emails) {

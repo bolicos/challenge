@@ -38,7 +38,7 @@ public class PreferenceApplicationService implements PreferenceUseCase {
     @Transactional(readOnly = true)
     public CommunicationPreferenceView findById(UUID id) {
         return persistencePort.findById(id)
-            .orElseThrow(() -> new PreferenceNotFoundException("preference not found"));
+            .orElseThrow(() -> preferenceNotFound(id));
     }
 
     @Override
@@ -51,7 +51,7 @@ public class PreferenceApplicationService implements PreferenceUseCase {
     @Transactional
     public CommunicationPreferenceView update(UUID id, CommunicationPreference preference) {
         if (!persistencePort.existsById(id)) {
-            throw new PreferenceNotFoundException("preference not found");
+            throw preferenceNotFound(id);
         }
 
         preference.setId(id);
@@ -66,7 +66,7 @@ public class PreferenceApplicationService implements PreferenceUseCase {
     @Transactional
     public void delete(UUID id) {
         CommunicationPreferenceView existing = persistencePort.findById(id)
-            .orElseThrow(() -> new PreferenceNotFoundException("preference not found"));
+            .orElseThrow(() -> preferenceNotFound(id));
 
         persistencePort.deleteById(id);
         publishAfterCommit(PreferenceChangedEvent.of(PreferenceEventType.PREFERENCE_DELETED, existing));
@@ -76,6 +76,10 @@ public class PreferenceApplicationService implements PreferenceUseCase {
         if (preference.getCustomerId() == null) {
             preference.setCustomerId(UUID.randomUUID());
         }
+    }
+
+    private PreferenceNotFoundException preferenceNotFound(UUID id) {
+        return new PreferenceNotFoundException("Preferência " + id + " não encontrada");
     }
 
     private void publishAfterCommit(PreferenceChangedEvent event) {
