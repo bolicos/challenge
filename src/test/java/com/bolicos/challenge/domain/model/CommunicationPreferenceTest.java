@@ -107,6 +107,21 @@ class CommunicationPreferenceTest {
     }
 
     @Test
+    void deveLimparEmailsQuandoReplaceReceberListaNula() {
+        var pref = new CommunicationPreference();
+
+        var email = new PreferenceEmail();
+        email.setEmail("old@x.com");
+        email.setType(EmailType.PESSOAL);
+        email.setVerified(false);
+        pref.addEmail(email);
+
+        pref.replaceEmails(null);
+
+        assertTrue(pref.getEmails().isEmpty());
+    }
+
+    @Test
     void deveLancarExcecaoQuandoDuplicadoNoReplace() {
         var pref = new CommunicationPreference();
 

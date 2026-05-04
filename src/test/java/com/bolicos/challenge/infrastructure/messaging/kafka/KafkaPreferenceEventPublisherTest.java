@@ -8,7 +8,9 @@ import com.bolicos.challenge.config.observability.HttpRequestMdcFilter;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.infrastructure.messaging.dto.PreferenceChangedEventPayload;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -69,8 +72,43 @@ class KafkaPreferenceEventPublisherTest {
         verify(kafkaTemplate).send(any(ProducerRecord.class));
     }
 
+    @Test
+    void deveRegistrarMetricaDeSucessoQuandoPublicarEvento() {
+        var meterRegistry = new SimpleMeterRegistry();
+        var publisher = publisher(meterRegistry);
+        var event = event();
+
+        doAnswer(invocation -> {
+            ProducerRecord<String, PreferenceChangedEventPayload> record = invocation.getArgument(0);
+            var metadata = new RecordMetadata(
+                new TopicPartition(record.topic(), 0),
+                0L,
+                1,
+                System.currentTimeMillis(),
+                0,
+                0
+            );
+            return CompletableFuture.completedFuture(new org.springframework.kafka.support.SendResult<>(record, metadata));
+        }).when(kafkaTemplate).send(any(ProducerRecord.class));
+
+        publisher.publish(event);
+
+        assertEquals(
+            1.0,
+            meterRegistry.counter(
+                "challenge.kafka.preference.events.publish.success",
+                "event.type",
+                event.eventType().name()
+            ).count()
+        );
+    }
+
     private KafkaPreferenceEventPublisher publisher() {
-        var publisher = new KafkaPreferenceEventPublisher(kafkaTemplate, new SimpleMeterRegistry());
+        return publisher(new SimpleMeterRegistry());
+    }
+
+    private KafkaPreferenceEventPublisher publisher(SimpleMeterRegistry meterRegistry) {
+        var publisher = new KafkaPreferenceEventPublisher(kafkaTemplate, meterRegistry);
         ReflectionTestUtils.setField(publisher, "preferenceEventsTopic", "communication-preference-events");
 
         return publisher;

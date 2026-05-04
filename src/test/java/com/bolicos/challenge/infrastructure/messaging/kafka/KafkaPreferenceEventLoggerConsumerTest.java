@@ -7,6 +7,8 @@ import org.springframework.kafka.support.Acknowledgment;
 
 import java.nio.charset.StandardCharsets;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -33,6 +35,17 @@ class KafkaPreferenceEventLoggerConsumerTest {
         var acknowledgment = mock(Acknowledgment.class);
 
         consumer.consume(record, acknowledgment);
+
+        verify(acknowledgment).acknowledge();
+    }
+
+    @Test
+    void deveLogarERelancarErroQuandoFalharAoConsumirEvento() {
+        var record = new ConsumerRecord<>("communication-preference-events", 0, 1L, "key", "{}");
+        var acknowledgment = mock(Acknowledgment.class);
+        doThrow(new IllegalStateException("ack fail")).when(acknowledgment).acknowledge();
+
+        assertThrows(IllegalStateException.class, () -> consumer.consume(record, acknowledgment));
 
         verify(acknowledgment).acknowledge();
     }

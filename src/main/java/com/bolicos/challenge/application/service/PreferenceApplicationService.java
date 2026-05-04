@@ -9,11 +9,11 @@ import com.bolicos.challenge.application.port.in.PreferenceUseCase;
 import com.bolicos.challenge.application.port.out.PreferencePersistencePort;
 import com.bolicos.challenge.domain.exception.PreferenceNotFoundException;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
+import com.bolicos.challenge.shared.util.PreferenceCustomerIdUtils;
+import com.bolicos.challenge.shared.util.TransactionEventPublisherUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +28,7 @@ public class PreferenceApplicationService implements PreferenceUseCase {
     @Override
     @Transactional
     public CommunicationPreferenceView create(CommunicationPreference preference) {
-        ensureCustomerId(preference);
+        PreferenceCustomerIdUtils.ensureCustomerId(preference);
         CommunicationPreferenceView created = persistencePort.save(preference);
         publishAfterCommit(PreferenceChangedEvent.of(PreferenceEventType.PREFERENCE_CREATED, created));
 
@@ -62,7 +62,7 @@ public class PreferenceApplicationService implements PreferenceUseCase {
         }
 
         preference.setId(id);
-        ensureCustomerId(preference);
+        PreferenceCustomerIdUtils.ensureCustomerId(preference);
         CommunicationPreferenceView updated = persistencePort.save(preference);
         publishAfterCommit(PreferenceChangedEvent.of(PreferenceEventType.PREFERENCE_UPDATED, updated));
 
@@ -79,27 +79,11 @@ public class PreferenceApplicationService implements PreferenceUseCase {
         publishAfterCommit(PreferenceChangedEvent.of(PreferenceEventType.PREFERENCE_DELETED, existing));
     }
 
-    private void ensureCustomerId(CommunicationPreference preference) {
-        if (preference.getCustomerId() == null) {
-            preference.setCustomerId(UUID.randomUUID());
-        }
-    }
-
     private PreferenceNotFoundException preferenceNotFound(UUID id) {
         return new PreferenceNotFoundException("Preferência " + id + " não encontrada");
     }
 
     private void publishAfterCommit(PreferenceChangedEvent event) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            eventPublisher.publish(event);
-            return;
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                eventPublisher.publish(event);
-            }
-        });
+        TransactionEventPublisherUtils.publishAfterCommit(eventPublisher, event);
     }
 }
