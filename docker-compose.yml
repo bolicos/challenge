@@ -65,7 +65,9 @@ services:
         condition: service_healthy
 
   api:
-    build: .
+    image: challenge-api:${APP_VERSION:-local}
+    build:
+      context: .
     container_name: challenge-api
     ports:
       - "8080:8080"
