@@ -26,6 +26,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Configuration
 public class BatchConfiguration {
@@ -77,6 +78,9 @@ public class BatchConfiguration {
     public ItemProcessor<PreferenceCsvRecord, CommunicationPreference> preferenceCsvProcessor() {
         return record -> {
             var preference = new CommunicationPreference();
+            if (record.getCustomerId() != null && !record.getCustomerId().isBlank()) {
+                preference.setCustomerId(UUID.fromString(record.getCustomerId()));
+            }
             preference.setCommunicationChannel(CommunicationChannel.valueOf(record.getPreferenciaCanalComunicacao()));
 
             var email = new PreferenceEmail();
@@ -96,7 +100,7 @@ public class BatchConfiguration {
 
     private DefaultLineMapper<PreferenceCsvRecord> preferenceCsvLineMapper() {
         var tokenizer = new DelimitedLineTokenizer();
-        tokenizer.setNames("preferenciaCanalComunicacao", "email", "tipo", "verificado");
+        tokenizer.setNames("customerId", "preferenciaCanalComunicacao", "email", "tipo", "verificado");
         tokenizer.setStrict(true);
 
         var fieldSetMapper = new BeanWrapperFieldSetMapper<PreferenceCsvRecord>();

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public record CommunicationPreferenceResponse(
     UUID id,
+    UUID customerId,
     CommunicationChannel preferenciaCanalComunicacao,
     LocalDateTime dataAtualizacao,
     LocalDateTime dataCriacao,

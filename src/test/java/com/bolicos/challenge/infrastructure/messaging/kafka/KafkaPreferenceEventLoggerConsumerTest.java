@@ -3,6 +3,7 @@ package com.bolicos.challenge.infrastructure.messaging.kafka;
 import com.bolicos.challenge.config.observability.HttpRequestMdcFilter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 import org.springframework.kafka.support.Acknowledgment;
 
 import java.nio.charset.StandardCharsets;
@@ -27,6 +28,7 @@ class KafkaPreferenceEventLoggerConsumerTest {
         consumer.consume(record, acknowledgment);
 
         verify(acknowledgment).acknowledge();
+        org.junit.jupiter.api.Assertions.assertNull(MDC.get(HttpRequestMdcFilter.CORRELATION_ID_MDC_KEY));
     }
 
     @Test
@@ -48,5 +50,6 @@ class KafkaPreferenceEventLoggerConsumerTest {
         assertThrows(IllegalStateException.class, () -> consumer.consume(record, acknowledgment));
 
         verify(acknowledgment).acknowledge();
+        org.junit.jupiter.api.Assertions.assertNull(MDC.get(HttpRequestMdcFilter.SOURCE_MDC_KEY));
     }
 }

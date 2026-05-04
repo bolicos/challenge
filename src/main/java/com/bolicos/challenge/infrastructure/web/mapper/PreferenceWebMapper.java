@@ -19,6 +19,7 @@ public class PreferenceWebMapper {
 
     public CommunicationPreference toDomain(CommunicationPreferenceRequest request) {
         var preference = new CommunicationPreference();
+        preference.setCustomerId(request.customerId());
         preference.setCommunicationChannel(request.preferenciaCanalComunicacao());
         preference.replaceEmails(toDomainEmails(request.emails()));
 
@@ -28,6 +29,7 @@ public class PreferenceWebMapper {
     public CommunicationPreferenceResponse toResponse(CommunicationPreferenceView view) {
         return new CommunicationPreferenceResponse(
             view.id(),
+            view.customerId(),
             view.communicationChannel(),
             view.audit().dataAtualizacao(),
             view.audit().dataCriacao(),

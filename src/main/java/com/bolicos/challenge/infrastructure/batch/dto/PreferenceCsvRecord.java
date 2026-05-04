@@ -2,10 +2,19 @@ package com.bolicos.challenge.infrastructure.batch.dto;
 
 public class PreferenceCsvRecord {
 
+    private String customerId;
     private String preferenciaCanalComunicacao;
     private String email;
     private String tipo;
     private Boolean verificado;
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
 
     public String getPreferenciaCanalComunicacao() {
         return preferenciaCanalComunicacao;

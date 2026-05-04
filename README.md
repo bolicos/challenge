@@ -40,6 +40,7 @@ domain
   exception
 
 infrastructure
+  batch
   messaging
     dto
     kafka
@@ -53,6 +54,9 @@ infrastructure
     dto
     mapper
     exception
+
+shared
+  util
 ```
 
 Decisoes principais:
@@ -62,6 +66,7 @@ Decisoes principais:
 - Mappers manuais ficam nas bordas, nao no dominio.
 - A application layer depende de interfaces/ports.
 - A infra implementa as portas de persistencia e mensageria.
+- A importacao batch tem controller e use case proprios para manter o CRUD mais simples.
 - Eventos Kafka sao publicados somente apos commit da transacao.
 - `X-Correlation-Id` e propagado nos logs HTTP e no header da mensagem Kafka.
 
@@ -87,6 +92,7 @@ Base path:
 ## Validacoes
 
 - `preferenciaCanalComunicacao` e obrigatorio.
+- `customerId` identifica o cliente dono da preferencia. Quando omitido, o backend gera um UUID para manter compatibilidade com o payload original do challenge.
 - `emails` pode ser vazio ou omitido.
 - Quando enviado, cada e-mail deve ter:
   - `email` valido
@@ -170,6 +176,7 @@ curl -i -X POST "http://localhost:8080/api/preferencias" \
   -H "Content-Type: application/json" \
   -H "X-Correlation-Id: ${CORRELATION_ID}" \
   -d '{
+    "customerId": "11111111-1111-1111-1111-111111111111",
     "preferenciaCanalComunicacao": "EMAIL",
     "emails": [
       {
@@ -204,6 +211,7 @@ curl -i -X PUT "http://localhost:8080/api/preferencias/{id}" \
   -H "Content-Type: application/json" \
   -H "X-Correlation-Id: ${CORRELATION_ID}" \
   -d '{
+    "customerId": "11111111-1111-1111-1111-111111111111",
     "preferenciaCanalComunicacao": "WHATSAPP",
     "emails": [
       {
@@ -231,6 +239,7 @@ curl -i -X POST "http://localhost:8080/api/preferencias/importacao" \
   -d '{
     "preferencias": [
       {
+        "customerId": "22222222-2222-2222-2222-222222222222",
         "preferenciaCanalComunicacao": "EMAIL",
         "emails": [
           {
@@ -241,6 +250,7 @@ curl -i -X POST "http://localhost:8080/api/preferencias/importacao" \
         ]
       },
       {
+        "customerId": "33333333-3333-3333-3333-333333333333",
         "preferenciaCanalComunicacao": "WHATSAPP",
         "emails": [
           {
@@ -268,9 +278,9 @@ O resumo e consultado a partir da view SQL `vw_communication_preference_summary`
 Formato esperado do CSV:
 
 ```csv
-preferenciaCanalComunicacao,email,tipo,verificado
-EMAIL,cliente.csv.1@example.com,PESSOAL,false
-WHATSAPP,cliente.csv.2@example.com,COMERCIAL,true
+customerId,preferenciaCanalComunicacao,email,tipo,verificado
+11111111-1111-1111-1111-111111111111,EMAIL,cliente.csv.1@example.com,PESSOAL,false
+22222222-2222-2222-2222-222222222222,WHATSAPP,cliente.csv.2@example.com,COMERCIAL,true
 ```
 
 Chamada:
@@ -278,10 +288,10 @@ Chamada:
 ```bash
 curl -i -X POST "http://localhost:8080/api/preferencias/importacao/csv" \
   -H "X-Correlation-Id: ${CORRELATION_ID}" \
-  -F "file=@preferencias.csv;type=text/csv"
+  -F "file=@samples/preferencias.csv;type=text/csv"
 ```
 
-O endpoint dispara o job `preferenceCsvImportJob` e retorna o status da execucao.
+O endpoint dispara o job `preferenceCsvImportJob` e retorna o status da execucao. O arquivo `samples/preferencias.csv` fica no repositorio como exemplo pronto para teste manual.
 
 ## Eventos Kafka
 
@@ -349,6 +359,10 @@ Metricas customizadas expostas via Actuator/Prometheus:
 challenge.kafka.preference.events.publish.attempt
 challenge.kafka.preference.events.publish.success
 challenge.kafka.preference.events.publish.failure
+challenge.batch.preference.csv.import.attempt
+challenge.batch.preference.csv.import.success
+challenge.batch.preference.csv.import.failure
+challenge.batch.preference.csv.import.duration
 ```
 
 ## Observabilidade
@@ -380,12 +394,13 @@ HTTP request -> service -> database -> Kafka event
 - Observabilidade: `X-Correlation-Id` e gerado ou reaproveitado em cada request, propagado para Kafka e registrado nos logs. Isso ajuda a rastrear o fluxo completo em ferramentas como OpenSearch, Loki, Datadog ou similares.
 - Serializacao: datas sao serializadas como string ISO-8601, evitando arrays de data/hora no JSON. A configuracao fica centralizada em `JacksonConfiguration`.
 - CORS: `WebConfiguration` centraliza a configuracao de CORS para `/api/**`, expondo `X-Correlation-Id` e `Location` para clientes HTTP.
-- `customerId` ainda nao esta no payload do challenge. Por enquanto, a application layer gera um UUID quando ausente. Em uma aplicacao real, esse valor deveria vir do payload, path param ou usuario autenticado.
+- `customerId` foi adicionado ao payload como extensao do challenge, porque a preferencia pertence a um cliente. Ele permanece opcional para preservar compatibilidade com o exemplo original; quando ausente, a application layer gera um UUID.
 - Docker image tag: o Compose usa `challenge-api:${APP_VERSION:-local}` para evitar imagens sem tag (`<none>`) e permitir versoes explicitas em build local ou CI.
 - Flyway local: o profile `local` tambem usa Flyway e `ddl-auto=validate`. Isso evita divergencia entre ambiente local e runtime em container, mantendo o schema sob controle das migrations.
 - PostgreSQL vs Oracle: Oracle Free foi considerado, mas a imagem Docker e mais pesada para um challenge. PostgreSQL foi escolhido por ser leve, simples de subir localmente e oferecer recursos SQL avancados. Para cenarios Oracle, as migrations poderiam ser adaptadas para sequences, packages, procedures e PL/SQL. No PostgreSQL, o equivalente procedural seria PL/pgSQL.
 - View SQL: a migration `V3__create_communication_preference_summary_view.sql` cria a view `vw_communication_preference_summary`, usada pelo endpoint `/api/preferencias/resumo`. Isso demonstra uma abordagem de read model baseada em banco, comum em sistemas com consultas consolidadas.
-- Batch import: o endpoint `/api/preferencias/importacao` permite processar uma lista de preferencias em lote. A implementacao reaproveita a mesma application layer e publica eventos para cada preferencia criada.
+- Batch import: o endpoint `/api/preferencias/importacao` permite processar uma lista de preferencias em lote. A implementacao usa controller e use case proprios para separar importacao do CRUD transacional principal.
 - Spring Batch CSV: o endpoint `/api/preferencias/importacao/csv` demonstra um fluxo mais proximo de cenarios corporativos de importacao por arquivo. O job le o CSV em chunks, transforma linhas em objetos de dominio e reaproveita o use case de importacao.
+- Metricas de batch: a importacao CSV registra metricas de tentativa, sucesso, falha e duracao com tag `job.name`, permitindo acompanhar execucoes no Prometheus.
 - Flyway PostgreSQL module: o projeto inclui `flyway-database-postgresql`, necessario em versoes recentes do Flyway para reconhecer corretamente bancos PostgreSQL modernos.
 - Outbox pattern: nao foi implementado nesta versao. Em um sistema produtivo, seria uma melhoria importante para garantir publicacao confiavel de eventos. A ideia e salvar o evento em uma tabela `outbox_events` na mesma transacao do dado principal; depois, um worker/batch publica eventos pendentes no Kafka e marca cada item como publicado. Isso evita perder eventos quando o banco confirma a alteracao, mas o Kafka esta temporariamente indisponivel.

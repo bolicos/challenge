@@ -48,20 +48,23 @@ class PreferenceControllerTest {
     @Test
     void deveCriarPreferencia() throws Exception {
         UUID id = UUID.randomUUID();
-        when(preferenceUseCase.create(any())).thenReturn(view(id));
+        UUID customerId = UUID.randomUUID();
+        when(preferenceUseCase.create(any())).thenReturn(view(id, customerId));
 
         mockMvc.perform(post("/api/preferencias")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(validPayload()))
+                .content(validPayload(customerId)))
             .andExpect(status().isCreated())
             .andExpect(header().string("Location", "http://localhost/api/preferencias/" + id))
             .andExpect(jsonPath("$.id").value(id.toString()))
+            .andExpect(jsonPath("$.customerId").value(customerId.toString()))
             .andExpect(jsonPath("$.preferenciaCanalComunicacao").value("EMAIL"))
             .andExpect(jsonPath("$.emails[0].email").value("cliente@example.com"))
             .andExpect(jsonPath("$.emails[0].tipo").value("PESSOAL"));
 
         var captor = ArgumentCaptor.forClass(com.bolicos.challenge.domain.model.CommunicationPreference.class);
         verify(preferenceUseCase).create(captor.capture());
+        assertEquals(customerId, captor.getValue().getCustomerId());
         assertEquals(CommunicationChannel.EMAIL, captor.getValue().getCommunicationChannel());
         assertEquals(1, captor.getValue().getEmails().size());
     }
@@ -113,7 +116,7 @@ class PreferenceControllerTest {
 
         mockMvc.perform(put("/api/preferencias/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(validPayload()))
+                .content(validPayload(UUID.randomUUID())))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(id.toString()));
 
@@ -163,6 +166,10 @@ class PreferenceControllerTest {
     }
 
     private CommunicationPreferenceView view(UUID id) {
+        return view(id, UUID.randomUUID());
+    }
+
+    private CommunicationPreferenceView view(UUID id, UUID customerId) {
         var audit = new AuditMetadata(
             LocalDateTime.of(2026, 5, 4, 10, 0),
             LocalDateTime.of(2026, 5, 4, 11, 0),
@@ -172,7 +179,7 @@ class PreferenceControllerTest {
 
         return new CommunicationPreferenceView(
             id,
-            UUID.randomUUID(),
+            customerId,
             CommunicationChannel.EMAIL,
             List.of(new PreferenceEmailView(
                 1L,
@@ -185,9 +192,10 @@ class PreferenceControllerTest {
         );
     }
 
-    private String validPayload() {
+    private String validPayload(UUID customerId) {
         return """
             {
+              "customerId": "%s",
               "preferenciaCanalComunicacao": "EMAIL",
               "emails": [
                 {
@@ -197,6 +205,6 @@ class PreferenceControllerTest {
                 }
               ]
             }
-            """;
+            """.formatted(customerId);
     }
 }
