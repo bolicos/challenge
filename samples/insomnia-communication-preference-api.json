@@ -1,0 +1,206 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-05-04T00:00:00.000Z",
+  "__export_source": "challenge-api",
+  "resources": [
+    {
+      "_id": "wrk_challenge_communication_preference",
+      "_type": "workspace",
+      "name": "Communication Preference API",
+      "description": "CRUD de preferencias de comunicacao, batch CSV e observabilidade."
+    },
+    {
+      "_id": "env_challenge_base",
+      "_type": "environment",
+      "parentId": "wrk_challenge_communication_preference",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "correlation_id": "manual-test-001",
+        "customer_id": "11111111-1111-1111-1111-111111111111",
+        "preference_id": "substitua-pelo-id-retornado-no-post"
+      }
+    },
+    {
+      "_id": "fld_preferences_crud",
+      "_type": "request_group",
+      "parentId": "wrk_challenge_communication_preference",
+      "name": "Preferencias - CRUD"
+    },
+    {
+      "_id": "fld_preferences_batch",
+      "_type": "request_group",
+      "parentId": "wrk_challenge_communication_preference",
+      "name": "Preferencias - Batch"
+    },
+    {
+      "_id": "fld_observability",
+      "_type": "request_group",
+      "parentId": "wrk_challenge_communication_preference",
+      "name": "Observabilidade"
+    },
+    {
+      "_id": "req_create_preference",
+      "_type": "request",
+      "parentId": "fld_preferences_crud",
+      "name": "Criar preferencia",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/preferencias",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerId\": \"{{ _.customer_id }}\",\n  \"preferenciaCanalComunicacao\": \"EMAIL\",\n  \"emails\": [\n    {\n      \"email\": \"cliente.insomnia@example.com\",\n      \"tipo\": \"PESSOAL\",\n      \"verificado\": false\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_get_preference_by_id",
+      "_type": "request",
+      "parentId": "fld_preferences_crud",
+      "name": "Buscar preferencia por ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/preferencias/{{ _.preference_id }}",
+      "headers": [
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_list_preferences",
+      "_type": "request",
+      "parentId": "fld_preferences_crud",
+      "name": "Listar preferencias",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/preferencias",
+      "headers": [
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_update_preference",
+      "_type": "request",
+      "parentId": "fld_preferences_crud",
+      "name": "Atualizar preferencia",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/preferencias/{{ _.preference_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerId\": \"{{ _.customer_id }}\",\n  \"preferenciaCanalComunicacao\": \"WHATSAPP\",\n  \"emails\": [\n    {\n      \"email\": \"cliente.insomnia.updated@example.com\",\n      \"tipo\": \"COMERCIAL\",\n      \"verificado\": true\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_delete_preference",
+      "_type": "request",
+      "parentId": "fld_preferences_crud",
+      "name": "Deletar preferencia",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/preferencias/{{ _.preference_id }}",
+      "headers": [
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_preferences_summary",
+      "_type": "request",
+      "parentId": "fld_preferences_crud",
+      "name": "Consultar resumo",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/preferencias/resumo",
+      "headers": [
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_import_batch_json",
+      "_type": "request",
+      "parentId": "fld_preferences_batch",
+      "name": "Importar preferencias em lote",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/preferencias/importacao",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"preferencias\": [\n    {\n      \"customerId\": \"22222222-2222-2222-2222-222222222222\",\n      \"preferenciaCanalComunicacao\": \"EMAIL\",\n      \"emails\": [\n        {\n          \"email\": \"cliente.batch.insomnia.1@example.com\",\n          \"tipo\": \"PESSOAL\",\n          \"verificado\": false\n        }\n      ]\n    },\n    {\n      \"customerId\": \"33333333-3333-3333-3333-333333333333\",\n      \"preferenciaCanalComunicacao\": \"WHATSAPP\",\n      \"emails\": [\n        {\n          \"email\": \"cliente.batch.insomnia.2@example.com\",\n          \"tipo\": \"COMERCIAL\",\n          \"verificado\": true\n        }\n      ]\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_import_batch_csv",
+      "_type": "request",
+      "parentId": "fld_preferences_batch",
+      "name": "Importar CSV com Spring Batch",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/preferencias/importacao/csv",
+      "headers": [
+        {
+          "name": "X-Correlation-Id",
+          "value": "{{ _.correlation_id }}"
+        }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "file",
+            "type": "file",
+            "fileName": "samples/preferencias.csv"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "req_actuator_health",
+      "_type": "request",
+      "parentId": "fld_observability",
+      "name": "Actuator Health",
+      "method": "GET",
+      "url": "{{ _.base_url }}/actuator/health"
+    },
+    {
+      "_id": "req_actuator_prometheus",
+      "_type": "request",
+      "parentId": "fld_observability",
+      "name": "Actuator Prometheus",
+      "method": "GET",
+      "url": "{{ _.base_url }}/actuator/prometheus"
+    }
+  ]
+}

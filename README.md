@@ -309,6 +309,33 @@ curl -i -X POST "http://localhost:8080/api/preferencias/importacao/csv" \
 
 O endpoint dispara o job `preferenceCsvImportJob` e retorna o status da execucao. O arquivo `samples/preferencias.csv` fica no repositorio como exemplo pronto para teste manual.
 
+## Insomnia
+
+Existe uma collection pronta para importar no Insomnia:
+
+```text
+samples/insomnia-communication-preference-api.json
+```
+
+Ela inclui:
+
+- CRUD completo de preferencias
+- importacao em lote por JSON
+- importacao CSV com Spring Batch
+- Actuator health
+- Actuator Prometheus
+
+Variaveis configuradas na collection:
+
+```text
+base_url=http://localhost:8080
+correlation_id=manual-test-001
+customer_id=11111111-1111-1111-1111-111111111111
+preference_id=substitua-pelo-id-retornado-no-post
+```
+
+Depois de executar `Criar preferencia`, copie o `id` retornado para a variavel `preference_id` para testar busca, atualizacao e delete.
+
 ## Eventos Kafka
 
 Apos alteracoes de dados, a API publica eventos no topico:
