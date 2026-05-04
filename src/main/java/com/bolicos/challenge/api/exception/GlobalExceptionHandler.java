@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import com.bolicos.challenge.domain.exception.PreferenceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -32,6 +33,18 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(NoResourceFoundException.class)
     public ApiError handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
+        var message = "Recurso não encontrado";
+        var details = List.of(ex.getMessage());
+        var uri = request.getRequestURI();
+
+        log.warn("{}: method={}, path={}, message={}", message, request.getMethod(), uri, ex.getMessage());
+
+        return ApiError.of(NOT_FOUND_CODE, NOT_FOUND, message, uri, details);
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(PreferenceNotFoundException.class)
+    public ApiError handlePreferenceNotFound(PreferenceNotFoundException ex, HttpServletRequest request) {
         var message = "Recurso não encontrado";
         var details = List.of(ex.getMessage());
         var uri = request.getRequestURI();
