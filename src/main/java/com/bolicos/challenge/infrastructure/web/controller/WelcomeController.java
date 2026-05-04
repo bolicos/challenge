@@ -1,4 +1,4 @@
-package com.bolicos.challenge.api.controller;
+package com.bolicos.challenge.infrastructure.web.controller;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;

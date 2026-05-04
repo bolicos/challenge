@@ -1,8 +1,8 @@
-package com.bolicos.challenge.api.controller;
+package com.bolicos.challenge.infrastructure.web.controller;
 
-import com.bolicos.challenge.api.dto.CommunicationPreferenceRequest;
-import com.bolicos.challenge.api.dto.CommunicationPreferenceResponse;
-import com.bolicos.challenge.api.mapper.PreferenceWebMapper;
+import com.bolicos.challenge.infrastructure.web.dto.CommunicationPreferenceRequest;
+import com.bolicos.challenge.infrastructure.web.dto.CommunicationPreferenceResponse;
+import com.bolicos.challenge.infrastructure.web.mapper.PreferenceWebMapper;
 import com.bolicos.challenge.application.port.in.PreferenceUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

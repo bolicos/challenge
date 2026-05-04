@@ -1,9 +1,9 @@
-package com.bolicos.challenge.api.mapper;
+package com.bolicos.challenge.infrastructure.web.mapper;
 
-import com.bolicos.challenge.api.dto.CommunicationPreferenceRequest;
-import com.bolicos.challenge.api.dto.CommunicationPreferenceResponse;
-import com.bolicos.challenge.api.dto.PreferenceEmailRequest;
-import com.bolicos.challenge.api.dto.PreferenceEmailResponse;
+import com.bolicos.challenge.infrastructure.web.dto.CommunicationPreferenceRequest;
+import com.bolicos.challenge.infrastructure.web.dto.CommunicationPreferenceResponse;
+import com.bolicos.challenge.infrastructure.web.dto.PreferenceEmailRequest;
+import com.bolicos.challenge.infrastructure.web.dto.PreferenceEmailResponse;
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.application.model.PreferenceEmailView;
 import com.bolicos.challenge.domain.model.CommunicationPreference;

@@ -1,0 +1,29 @@
+package com.bolicos.challenge.infrastructure.messaging.kafka;
+
+import com.bolicos.challenge.config.observability.HttpRequestMdcFilter;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+
+class KafkaPreferenceEventLoggerConsumerTest {
+
+    private final KafkaPreferenceEventLoggerConsumer consumer = new KafkaPreferenceEventLoggerConsumer();
+
+    @Test
+    void deveConsumirEventoComHeaders() {
+        var record = new ConsumerRecord<>("communication-preference-events", 0, 1L, "key", "{\"eventId\":\"1\"}");
+        record.headers().add(KafkaPreferenceEventPublisher.EVENT_ID_HEADER, "event-1".getBytes(StandardCharsets.UTF_8));
+        record.headers().add(KafkaPreferenceEventPublisher.EVENT_TYPE_HEADER, "PREFERENCE_CREATED".getBytes(StandardCharsets.UTF_8));
+        record.headers().add(HttpRequestMdcFilter.CORRELATION_ID_HEADER, "corr-1".getBytes(StandardCharsets.UTF_8));
+
+        consumer.consume(record);
+    }
+
+    @Test
+    void deveConsumirEventoSemHeaders() {
+        var record = new ConsumerRecord<>("communication-preference-events", 0, 1L, "key", "{}");
+
+        consumer.consume(record);
+    }
+}

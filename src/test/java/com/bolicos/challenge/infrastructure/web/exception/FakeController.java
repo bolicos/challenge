@@ -1,4 +1,4 @@
-package com.bolicos.challenge.api.exception;
+package com.bolicos.challenge.infrastructure.web.exception;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

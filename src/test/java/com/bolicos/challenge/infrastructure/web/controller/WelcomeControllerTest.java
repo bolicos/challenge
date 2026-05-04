@@ -1,4 +1,4 @@
-package com.bolicos.challenge.api.controller;
+package com.bolicos.challenge.infrastructure.web.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.bolicos.challenge.api.dto;
+package com.bolicos.challenge.infrastructure.web.dto;
 
 import com.bolicos.challenge.domain.model.EmailType;
 import jakarta.validation.constraints.Email;

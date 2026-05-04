@@ -26,12 +26,6 @@ Este projeto foi desenvolvido como challenge backend Java, usando Spring Boot, D
 O projeto segue uma organizacao em camadas com DDD leve e portas/adapters:
 
 ```text
-api
-  controller
-  dto
-  mapper
-  exception
-
 application
   event
   model
@@ -46,7 +40,18 @@ domain
 
 infrastructure
   messaging
+    dto
+    kafka
   persistence
+    adapter
+    entity
+    mapper
+    repository
+  web
+    controller
+    dto
+    mapper
+    exception
 ```
 
 Decisoes principais:
@@ -88,7 +93,7 @@ Base path:
 Valores aceitos:
 
 ```text
-preferenciaCanalComunicacao: EMAIL, SMS, WHATSAPP
+preferenciaCanalComunicacao: SMS, EMAIL, WHATSAPP, TELEFONE, RESIDENCIAL
 tipo: PESSOAL, COMERCIAL
 ```
 
@@ -222,6 +227,14 @@ O payload inclui:
 
 As datas sao serializadas como string ISO-8601.
 
+Em ambiente local, existe um consumer demonstrativo para o mesmo topico, habilitado por:
+
+```properties
+challenge.kafka.consumers.preference-event-logger.enabled=true
+```
+
+Esse consumer apenas registra o evento no log da aplicacao para facilitar validacao manual do fluxo.
+
 ## Observabilidade
 
 Cada requisicao recebe ou gera um `X-Correlation-Id`.
@@ -244,4 +257,3 @@ HTTP request -> service -> database -> Kafka event
 - `customerId` ainda nao esta no payload do challenge. Por enquanto, a application layer gera um UUID quando ausente. Em uma aplicacao real, esse valor deveria vir do payload, path param ou usuario autenticado.
 - Os mappers sao manuais para manter simplicidade no challenge. MapStruct pode ser introduzido depois.
 - O envio Kafka e feito apos commit da transacao. Falhas de envio sao logadas, sem rollback da operacao ja commitada.
-
