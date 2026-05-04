@@ -7,9 +7,11 @@ import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryVie
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.application.port.out.PreferenceEventPublisher;
 import com.bolicos.challenge.application.port.out.PreferencePersistencePort;
+import com.bolicos.challenge.domain.exception.PreferenceNotFoundException;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PreferenceApplicationServiceTest {
 
@@ -42,6 +45,72 @@ class PreferenceApplicationServiceTest {
     }
 
     @Test
+    void deveGerarCustomerIdQuandoCriarPreferenciaSemCliente() {
+        var preference = preference(null);
+
+        service.create(preference);
+
+        assertNotNull(persistencePort.lastSavedPreference.getCustomerId());
+    }
+
+    @Test
+    void devePreservarCustomerIdQuandoCriarPreferenciaComCliente() {
+        UUID customerId = UUID.randomUUID();
+        var preference = preference(null);
+        preference.setCustomerId(customerId);
+
+        service.create(preference);
+
+        assertEquals(customerId, persistencePort.lastSavedPreference.getCustomerId());
+    }
+
+    @Test
+    void deveBuscarPreferenciaPorId() {
+        UUID id = UUID.randomUUID();
+        persistencePort.nextView = view(id);
+
+        var found = service.findById(id);
+
+        assertEquals(id, found.id());
+    }
+
+    @Test
+    void deveLancarExcecaoQuandoBuscarPreferenciaInexistente() {
+        UUID id = UUID.randomUUID();
+
+        var exception = assertThrows(PreferenceNotFoundException.class, () -> service.findById(id));
+
+        assertEquals("Preferência " + id + " não encontrada", exception.getMessage());
+    }
+
+    @Test
+    void deveListarPreferencias() {
+        var view = view(UUID.randomUUID());
+        persistencePort.views = List.of(view);
+
+        var result = service.findAll();
+
+        assertEquals(List.of(view), result);
+    }
+
+    @Test
+    void deveListarResumoDasPreferencias() {
+        var summary = new CommunicationPreferenceSummaryView(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            CommunicationChannel.EMAIL,
+            2L,
+            LocalDateTime.of(2026, 5, 4, 10, 0),
+            LocalDateTime.of(2026, 5, 4, 11, 0)
+        );
+        persistencePort.summaryViews = List.of(summary);
+
+        var result = service.findSummary();
+
+        assertEquals(List.of(summary), result);
+    }
+
+    @Test
     void devePublicarEventoQuandoAtualizarPreferencia() {
         UUID id = UUID.randomUUID();
         persistencePort.nextView = view(id);
@@ -53,14 +122,47 @@ class PreferenceApplicationServiceTest {
     }
 
     @Test
+    void deveDefinirIdInformadoQuandoAtualizarPreferencia() {
+        UUID id = UUID.randomUUID();
+        persistencePort.nextView = view(id);
+        var preference = preference(null);
+
+        service.update(id, preference);
+
+        assertEquals(id, persistencePort.lastSavedPreference.getId());
+        assertEquals(id, preference.getId());
+    }
+
+    @Test
+    void deveLancarExcecaoQuandoAtualizarPreferenciaInexistente() {
+        UUID id = UUID.randomUUID();
+
+        var exception = assertThrows(PreferenceNotFoundException.class, () -> service.update(id, preference(null)));
+
+        assertEquals("Preferência " + id + " não encontrada", exception.getMessage());
+        assertEquals(0, eventPublisher.count());
+    }
+
+    @Test
     void devePublicarEventoQuandoDeletarPreferencia() {
         UUID id = UUID.randomUUID();
         persistencePort.nextView = view(id);
 
         service.delete(id);
 
+        assertEquals(id, persistencePort.deletedId);
         assertEquals(PreferenceEventType.PREFERENCE_DELETED, eventPublisher.lastEvent().eventType());
         assertEquals(id, eventPublisher.lastEvent().preference().id());
+    }
+
+    @Test
+    void deveLancarExcecaoQuandoDeletarPreferenciaInexistente() {
+        UUID id = UUID.randomUUID();
+
+        var exception = assertThrows(PreferenceNotFoundException.class, () -> service.delete(id));
+
+        assertEquals("Preferência " + id + " não encontrada", exception.getMessage());
+        assertEquals(0, eventPublisher.count());
     }
 
     @Test
@@ -73,7 +175,7 @@ class PreferenceApplicationServiceTest {
             assertEquals(0, eventPublisher.count());
 
             TransactionSynchronizationManager.getSynchronizations()
-                .forEach(synchronization -> synchronization.afterCommit());
+                .forEach(TransactionSynchronization::afterCommit);
 
             assertEquals(1, eventPublisher.count());
             assertEquals(PreferenceEventType.PREFERENCE_CREATED, eventPublisher.lastEvent().eventType());
@@ -118,9 +220,14 @@ class PreferenceApplicationServiceTest {
     private class FakePreferencePersistencePort implements PreferencePersistencePort {
 
         private CommunicationPreferenceView nextView;
+        private List<CommunicationPreferenceView> views = List.of();
+        private List<CommunicationPreferenceSummaryView> summaryViews = List.of();
+        private CommunicationPreference lastSavedPreference;
+        private UUID deletedId;
 
         @Override
         public CommunicationPreferenceView save(CommunicationPreference preference) {
+            lastSavedPreference = preference;
             nextView = view(preference.getId() != null ? preference.getId() : UUID.randomUUID());
             return nextView;
         }
@@ -143,12 +250,12 @@ class PreferenceApplicationServiceTest {
 
         @Override
         public List<CommunicationPreferenceView> findAll() {
-            return List.of();
+            return views;
         }
 
         @Override
         public List<CommunicationPreferenceSummaryView> findSummary() {
-            return List.of();
+            return summaryViews;
         }
 
         @Override
@@ -158,6 +265,7 @@ class PreferenceApplicationServiceTest {
 
         @Override
         public void deleteById(UUID id) {
+            deletedId = id;
         }
     }
 
