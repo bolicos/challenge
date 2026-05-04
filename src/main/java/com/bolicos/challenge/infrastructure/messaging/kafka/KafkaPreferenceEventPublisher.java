@@ -4,6 +4,7 @@ import com.bolicos.challenge.application.event.PreferenceChangedEvent;
 import com.bolicos.challenge.application.port.out.PreferenceEventPublisher;
 import com.bolicos.challenge.config.observability.HttpRequestMdcFilter;
 import com.bolicos.challenge.infrastructure.messaging.dto.PreferenceChangedEventPayload;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -23,6 +24,7 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
     public static final String EVENT_TYPE_HEADER = "eventType";
 
     private final KafkaTemplate<String, PreferenceChangedEventPayload> kafkaTemplate;
+    private final MeterRegistry meterRegistry;
 
     @Value("${challenge.kafka.topics.preference-events:communication-preference-events}")
     private String preferenceEventsTopic;
@@ -31,6 +33,7 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
     public void publish(PreferenceChangedEvent event) {
         String preferenceId = event.preference().id().toString();
         String correlationId = MDC.get(HttpRequestMdcFilter.CORRELATION_ID_MDC_KEY);
+        incrementMetric("challenge.kafka.preference.events.publish.attempt", event.eventType().name());
         var payload = new PreferenceChangedEventPayload(
             event.eventId(),
             event.eventType().name(),
@@ -60,6 +63,7 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
         try {
             kafkaTemplate.send(record).whenComplete((result, exception) -> {
                 if (exception != null) {
+                    incrementMetric("challenge.kafka.preference.events.publish.failure", event.eventType().name());
                     log.error(
                         "Failed to publish preference event: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}",
                         event.eventId(),
@@ -72,6 +76,7 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
                     return;
                 }
 
+                incrementMetric("challenge.kafka.preference.events.publish.success", event.eventType().name());
                 log.info(
                     "Published preference event: eventId={}, eventType={}, preferenceId={}, topic={}, partition={}, offset={}, correlationId={}",
                     event.eventId(),
@@ -84,6 +89,7 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
                 );
             });
         } catch (Exception ex) {
+            incrementMetric("challenge.kafka.preference.events.publish.failure", event.eventType().name());
             log.error(
                 "Failed to schedule preference event publish: eventId={}, eventType={}, preferenceId={}, topic={}, correlationId={}, exceptionClass={}",
                 event.eventId(),
@@ -107,5 +113,9 @@ public class KafkaPreferenceEventPublisher implements PreferenceEventPublisher {
         }
 
         record.headers().add(name, value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void incrementMetric(String metricName, String eventType) {
+        meterRegistry.counter(metricName, "event.type", eventType).increment();
     }
 }

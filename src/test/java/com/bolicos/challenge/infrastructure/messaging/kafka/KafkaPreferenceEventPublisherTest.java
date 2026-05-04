@@ -7,6 +7,7 @@ import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.config.observability.HttpRequestMdcFilter;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.infrastructure.messaging.dto.PreferenceChangedEventPayload;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,7 +70,7 @@ class KafkaPreferenceEventPublisherTest {
     }
 
     private KafkaPreferenceEventPublisher publisher() {
-        var publisher = new KafkaPreferenceEventPublisher(kafkaTemplate);
+        var publisher = new KafkaPreferenceEventPublisher(kafkaTemplate, new SimpleMeterRegistry());
         ReflectionTestUtils.setField(publisher, "preferenceEventsTopic", "communication-preference-events");
 
         return publisher;
