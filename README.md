@@ -117,6 +117,12 @@ Rodar testes:
 ./gradlew check
 ```
 
+Ou apenas pelo Docker (Gerando a imagem e subindo o container do challenge):
+
+```bash
+docker compose up -d --build
+```
+
 URLs uteis:
 
 ```text
