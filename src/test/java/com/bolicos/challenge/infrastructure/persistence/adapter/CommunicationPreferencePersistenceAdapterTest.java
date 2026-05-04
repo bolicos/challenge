@@ -1,6 +1,7 @@
 package com.bolicos.challenge.infrastructure.persistence.adapter;
 
 import com.bolicos.challenge.application.model.AuditMetadata;
+import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryView;
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.domain.model.CommunicationChannel;
 import com.bolicos.challenge.domain.model.CommunicationPreference;
@@ -90,6 +91,35 @@ class CommunicationPreferencePersistenceAdapterTest {
         when(mapper.toView(entity)).thenReturn(view);
 
         assertEquals(1, adapter.findAll().size());
+    }
+
+    @Test
+    void deveSalvarPreferenciasEmLote() {
+        var preference = preference(null);
+        var entity = new CommunicationPreferenceEntity();
+        var view = view(UUID.randomUUID());
+
+        when(mapper.toNewEntity(preference)).thenReturn(entity);
+        when(repository.saveAll(List.of(entity))).thenReturn(List.of(entity));
+        when(mapper.toView(entity)).thenReturn(view);
+
+        assertEquals(1, adapter.saveAll(List.of(preference)).size());
+    }
+
+    @Test
+    void deveListarResumo() {
+        var summary = new CommunicationPreferenceSummaryView(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            CommunicationChannel.EMAIL,
+            1L,
+            LocalDateTime.now(),
+            LocalDateTime.now()
+        );
+
+        when(repository.findAllSummary()).thenReturn(List.of());
+
+        assertEquals(0, adapter.findSummary().size());
     }
 
     @Test

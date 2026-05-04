@@ -6,6 +6,7 @@ import com.bolicos.challenge.domain.model.EmailType;
 import com.bolicos.challenge.domain.model.PreferenceEmail;
 import com.bolicos.challenge.infrastructure.persistence.entity.CommunicationPreferenceEntity;
 import com.bolicos.challenge.infrastructure.persistence.entity.PreferenceEmailEntity;
+import com.bolicos.challenge.infrastructure.persistence.projection.CommunicationPreferenceSummaryProjection;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -77,6 +78,49 @@ class CommunicationPreferenceEntityMapperTest {
         assertEquals("cliente@example.com", view.emails().getFirst().email());
         assertEquals("system", view.audit().criadoPor());
         assertEquals("system", view.emails().getFirst().audit().alteradoPor());
+    }
+
+    @Test
+    void deveMapearProjectionParaResumo() {
+        UUID id = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        var summary = mapper.toSummaryView(new CommunicationPreferenceSummaryProjection() {
+            @Override
+            public UUID getId() {
+                return id;
+            }
+
+            @Override
+            public UUID getCustomerId() {
+                return customerId;
+            }
+
+            @Override
+            public String getCommunicationChannel() {
+                return "EMAIL";
+            }
+
+            @Override
+            public Long getEmailCount() {
+                return 2L;
+            }
+
+            @Override
+            public LocalDateTime getDataCriacao() {
+                return LocalDateTime.of(2026, 5, 4, 10, 0);
+            }
+
+            @Override
+            public LocalDateTime getDataAtualizacao() {
+                return LocalDateTime.of(2026, 5, 4, 11, 0);
+            }
+        });
+
+        assertEquals(id, summary.id());
+        assertEquals(customerId, summary.customerId());
+        assertEquals(CommunicationChannel.EMAIL, summary.communicationChannel());
+        assertEquals(2L, summary.emailCount());
     }
 
     private CommunicationPreference preference(List<PreferenceEmail> emails) {

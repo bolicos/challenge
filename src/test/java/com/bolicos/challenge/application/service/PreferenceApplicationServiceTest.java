@@ -3,6 +3,7 @@ package com.bolicos.challenge.application.service;
 import com.bolicos.challenge.application.event.PreferenceChangedEvent;
 import com.bolicos.challenge.application.event.PreferenceEventType;
 import com.bolicos.challenge.application.model.AuditMetadata;
+import com.bolicos.challenge.application.model.CommunicationPreferenceSummaryView;
 import com.bolicos.challenge.application.model.CommunicationPreferenceView;
 import com.bolicos.challenge.application.port.out.PreferenceEventPublisher;
 import com.bolicos.challenge.application.port.out.PreferencePersistencePort;
@@ -96,6 +97,16 @@ class PreferenceApplicationServiceTest {
         assertEquals(0, eventPublisher.count());
     }
 
+    @Test
+    void deveImportarPreferenciasEmLote() {
+        var result = service.importBatch(List.of(preference(null), preference(null)));
+
+        assertEquals(2, result.totalRecebido());
+        assertEquals(2, result.totalProcessado());
+        assertEquals(0, result.totalComErro());
+        assertEquals(2, eventPublisher.count());
+    }
+
     private CommunicationPreference preference(UUID id) {
         var preference = new CommunicationPreference();
         preference.setId(id);
@@ -125,6 +136,13 @@ class PreferenceApplicationServiceTest {
         }
 
         @Override
+        public List<CommunicationPreferenceView> saveAll(List<CommunicationPreference> preferences) {
+            return preferences.stream()
+                .map(this::save)
+                .toList();
+        }
+
+        @Override
         public Optional<CommunicationPreferenceView> findById(UUID id) {
             if (nextView == null || !nextView.id().equals(id)) {
                 return Optional.empty();
@@ -135,6 +153,11 @@ class PreferenceApplicationServiceTest {
 
         @Override
         public List<CommunicationPreferenceView> findAll() {
+            return List.of();
+        }
+
+        @Override
+        public List<CommunicationPreferenceSummaryView> findSummary() {
             return List.of();
         }
 
