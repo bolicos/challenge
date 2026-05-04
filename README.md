@@ -9,6 +9,7 @@ Este projeto foi desenvolvido como challenge backend Java, usando Spring Boot, D
 - Java 21
 - Spring Boot 3.x
 - Spring Webmvc
+- Spring Batch
 - Spring Data JPA
 - Bean Validation
 - Flyway
@@ -79,6 +80,9 @@ Base path:
 | PUT | `/api/preferencias/{id}` | Atualiza toda a preferencia |
 | DELETE | `/api/preferencias/{id}` | Remove por ID |
 | GET | `/api/preferencias` | Lista todas |
+| POST | `/api/preferencias/importacao` | Importa preferencias em lote |
+| POST | `/api/preferencias/importacao/csv` | Importa preferencias por arquivo CSV usando Spring Batch |
+| GET | `/api/preferencias/resumo` | Lista um resumo baseado em view SQL |
 
 ## Validacoes
 
@@ -218,6 +222,67 @@ curl -i -X DELETE "http://localhost:8080/api/preferencias/{id}" \
   -H "X-Correlation-Id: ${CORRELATION_ID}"
 ```
 
+### Importar Preferencias Em Lote
+
+```bash
+curl -i -X POST "http://localhost:8080/api/preferencias/importacao" \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: ${CORRELATION_ID}" \
+  -d '{
+    "preferencias": [
+      {
+        "preferenciaCanalComunicacao": "EMAIL",
+        "emails": [
+          {
+            "email": "cliente.batch.1@example.com",
+            "tipo": "PESSOAL",
+            "verificado": false
+          }
+        ]
+      },
+      {
+        "preferenciaCanalComunicacao": "WHATSAPP",
+        "emails": [
+          {
+            "email": "cliente.batch.2@example.com",
+            "tipo": "COMERCIAL",
+            "verificado": true
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+### Consultar Resumo
+
+```bash
+curl -i -X GET "http://localhost:8080/api/preferencias/resumo" \
+  -H "X-Correlation-Id: ${CORRELATION_ID}"
+```
+
+O resumo e consultado a partir da view SQL `vw_communication_preference_summary`.
+
+### Importar CSV Com Spring Batch
+
+Formato esperado do CSV:
+
+```csv
+preferenciaCanalComunicacao,email,tipo,verificado
+EMAIL,cliente.csv.1@example.com,PESSOAL,false
+WHATSAPP,cliente.csv.2@example.com,COMERCIAL,true
+```
+
+Chamada:
+
+```bash
+curl -i -X POST "http://localhost:8080/api/preferencias/importacao/csv" \
+  -H "X-Correlation-Id: ${CORRELATION_ID}" \
+  -F "file=@preferencias.csv;type=text/csv"
+```
+
+O endpoint dispara o job `preferenceCsvImportJob` e retorna o status da execucao.
+
 ## Eventos Kafka
 
 Apos alteracoes de dados, a API publica eventos no topico:
@@ -260,6 +325,32 @@ challenge.kafka.consumers.preference-event-logger.enabled=true
 
 Esse consumer apenas registra o evento no log da aplicacao para facilitar validacao manual do fluxo.
 
+Configuracoes aplicadas no Kafka producer:
+
+- `acks=all`
+- `retries=10`
+- `linger.ms=10`
+- `batch.size=32768`
+- `compression.type=lz4`
+- `enable.idempotence=true`
+- `request.timeout.ms=30000`
+- `delivery.timeout.ms=120000`
+- `max.in.flight.requests.per.connection=5`
+
+Configuracoes aplicadas no consumer demonstrativo:
+
+- `ack-mode=manual`
+- `enable-auto-commit=false`
+- offset confirmado somente apos processamento/log do evento
+
+Metricas customizadas expostas via Actuator/Prometheus:
+
+```text
+challenge.kafka.preference.events.publish.attempt
+challenge.kafka.preference.events.publish.success
+challenge.kafka.preference.events.publish.failure
+```
+
 ## Observabilidade
 
 Cada requisicao recebe ou gera um `X-Correlation-Id`.
@@ -291,3 +382,10 @@ HTTP request -> service -> database -> Kafka event
 - CORS: `WebConfiguration` centraliza a configuracao de CORS para `/api/**`, expondo `X-Correlation-Id` e `Location` para clientes HTTP.
 - `customerId` ainda nao esta no payload do challenge. Por enquanto, a application layer gera um UUID quando ausente. Em uma aplicacao real, esse valor deveria vir do payload, path param ou usuario autenticado.
 - Docker image tag: o Compose usa `challenge-api:${APP_VERSION:-local}` para evitar imagens sem tag (`<none>`) e permitir versoes explicitas em build local ou CI.
+- Flyway local: o profile `local` tambem usa Flyway e `ddl-auto=validate`. Isso evita divergencia entre ambiente local e runtime em container, mantendo o schema sob controle das migrations.
+- PostgreSQL vs Oracle: Oracle Free foi considerado, mas a imagem Docker e mais pesada para um challenge. PostgreSQL foi escolhido por ser leve, simples de subir localmente e oferecer recursos SQL avancados. Para cenarios Oracle, as migrations poderiam ser adaptadas para sequences, packages, procedures e PL/SQL. No PostgreSQL, o equivalente procedural seria PL/pgSQL.
+- View SQL: a migration `V3__create_communication_preference_summary_view.sql` cria a view `vw_communication_preference_summary`, usada pelo endpoint `/api/preferencias/resumo`. Isso demonstra uma abordagem de read model baseada em banco, comum em sistemas com consultas consolidadas.
+- Batch import: o endpoint `/api/preferencias/importacao` permite processar uma lista de preferencias em lote. A implementacao reaproveita a mesma application layer e publica eventos para cada preferencia criada.
+- Spring Batch CSV: o endpoint `/api/preferencias/importacao/csv` demonstra um fluxo mais proximo de cenarios corporativos de importacao por arquivo. O job le o CSV em chunks, transforma linhas em objetos de dominio e reaproveita o use case de importacao.
+- Flyway PostgreSQL module: o projeto inclui `flyway-database-postgresql`, necessario em versoes recentes do Flyway para reconhecer corretamente bancos PostgreSQL modernos.
+- Outbox pattern: nao foi implementado nesta versao. Em um sistema produtivo, seria uma melhoria importante para garantir publicacao confiavel de eventos. A ideia e salvar o evento em uma tabela `outbox_events` na mesma transacao do dado principal; depois, um worker/batch publica eventos pendentes no Kafka e marca cada item como publicado. Isso evita perder eventos quando o banco confirma a alteracao, mas o Kafka esta temporariamente indisponivel.
