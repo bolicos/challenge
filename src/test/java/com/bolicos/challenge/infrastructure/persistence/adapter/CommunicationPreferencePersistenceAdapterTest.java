@@ -44,7 +44,7 @@ class CommunicationPreferencePersistenceAdapterTest {
         var view = view(UUID.randomUUID());
 
         when(mapper.toNewEntity(preference)).thenReturn(entity);
-        when(repository.save(entity)).thenReturn(entity);
+        when(repository.saveAndFlush(entity)).thenReturn(entity);
         when(mapper.toView(entity)).thenReturn(view);
 
         var saved = adapter.save(preference);
@@ -61,7 +61,7 @@ class CommunicationPreferencePersistenceAdapterTest {
         var view = view(id);
 
         when(repository.findWithEmailsById(id)).thenReturn(Optional.of(entity));
-        when(repository.save(entity)).thenReturn(entity);
+        when(repository.saveAndFlush(entity)).thenReturn(entity);
         when(mapper.toView(entity)).thenReturn(view);
 
         var saved = adapter.save(preference);

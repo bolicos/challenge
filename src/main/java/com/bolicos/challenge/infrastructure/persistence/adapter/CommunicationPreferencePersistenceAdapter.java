@@ -26,7 +26,7 @@ public class CommunicationPreferencePersistenceAdapter implements PreferencePers
         CommunicationPreferenceEntity entity = resolveEntity(preference);
         mapper.applyDomain(entity, preference);
 
-        return mapper.toView(repository.save(entity));
+        return mapper.toView(repository.saveAndFlush(entity));
     }
 
     @Override

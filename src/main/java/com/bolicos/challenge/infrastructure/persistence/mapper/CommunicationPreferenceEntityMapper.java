@@ -84,6 +84,10 @@ public class CommunicationPreferenceEntityMapper {
         List<PreferenceEmailEntity> existingEmails,
         PreferenceEmail email
     ) {
+        if (existingEmails.size() == 1 && email.getId() == null) {
+            return Optional.of(existingEmails.getFirst());
+        }
+
         if (email.getId() != null) {
             Optional<PreferenceEmailEntity> byId = existingEmails.stream()
                 .filter(existing -> email.getId().equals(existing.getId()))
