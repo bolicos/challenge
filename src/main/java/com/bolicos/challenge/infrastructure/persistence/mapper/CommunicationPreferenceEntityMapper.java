@@ -63,7 +63,11 @@ public class CommunicationPreferenceEntityMapper {
 
         List<PreferenceEmail> incomingEmails = emails == null ? List.of() : emails;
         for (PreferenceEmail email : incomingEmails) {
-            PreferenceEmailEntity emailEntity = findMatchingEmail(preference.getEmails(), email)
+            PreferenceEmailEntity emailEntity = findMatchingEmail(
+                    preference.getEmails(),
+                    email,
+                    incomingEmails.size() == 1
+                )
                 .orElseGet(() -> {
                     var newEmail = new PreferenceEmailEntity();
                     newEmail.setPreference(preference);
@@ -82,9 +86,10 @@ public class CommunicationPreferenceEntityMapper {
 
     private Optional<PreferenceEmailEntity> findMatchingEmail(
         List<PreferenceEmailEntity> existingEmails,
-        PreferenceEmail email
+        PreferenceEmail email,
+        boolean allowSingleEmailFallback
     ) {
-        if (existingEmails.size() == 1 && email.getId() == null) {
+        if (allowSingleEmailFallback && existingEmails.size() == 1 && email.getId() == null) {
             return Optional.of(existingEmails.getFirst());
         }
 
